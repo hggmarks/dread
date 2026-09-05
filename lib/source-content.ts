@@ -26,6 +26,14 @@ export function saveSources(sources: SourceContent[]) {
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(sources));
 }
 
+export function updateSourcePosition(id: string, lastPosition: number) {
+  const sources = loadSources();
+  const nextSources = sources.map((source) =>
+    source.id === id ? { ...source, lastPosition } : source
+  );
+  saveSources(nextSources);
+}
+
 export function createSource(text: string, title = "Untitled source"): SourceContent {
   return {
     id: crypto.randomUUID(),

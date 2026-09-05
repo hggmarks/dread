@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 import userEvent from "@testing-library/user-event";
 import HomePage from "../app/page";
@@ -45,17 +45,66 @@ describe("Focus Reader home page", () => {
     render(<HomePage />);
 
     await user.click(screen.getByRole("button", { name: "Import source" }));
-    await user.type(screen.getByLabelText("Paste text"), "One two three.");
+    await user.type(
+      screen.getByLabelText("Paste text"),
+      "One two three four five six seven eight nine ten."
+    );
     await user.click(screen.getByRole("button", { name: "Review source" }));
     await user.click(screen.getByRole("button", { name: "Save source" }));
     await user.click(screen.getByRole("button", { name: /Untitled source/ }));
 
     expect(screen.getByText("Conventional Reader")).toBeInTheDocument();
-    expect(screen.getByText("One two three.")).toBeInTheDocument();
+    expect(screen.getByText("One two three four five six seven eight nine ten.")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Focus Reader" }));
     expect(screen.getByRole("group", { name: "Reading mode" })).toBeInTheDocument();
     expect(screen.getByLabelText("Current word")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
+  });
+
+  it("persists the last word position while reading", async () => {
+    const user = userEvent.setup();
+    render(<HomePage />);
+
+    await user.click(screen.getByRole("button", { name: "Import source" }));
+    await user.type(
+      screen.getByLabelText("Paste text"),
+      "One two three four five six seven eight nine ten."
+    );
+    await user.click(screen.getByRole("button", { name: "Review source" }));
+    await user.click(screen.getByRole("button", { name: "Save source" }));
+    await user.click(screen.getByRole("button", { name: /Untitled source/ }));
+    await user.click(screen.getByRole("button", { name: "Focus Reader" }));
+    await user.click(screen.getByRole("button", { name: "Play" }));
+
+    await new Promise((resolve) => setTimeout(resolve, 900));
+    await user.click(screen.getByRole("button", { name: "Pause" }));
+
+    const stored = JSON.parse(window.localStorage.getItem("focus-reader:sources") ?? "[]");
+    expect(stored[0].lastPosition).toBeGreaterThan(0);
+  });
+
+  it("pauses a Focus Reader when the app leaves the foreground", async () => {
+    const user = userEvent.setup();
+    render(<HomePage />);
+
+    await user.click(screen.getByRole("button", { name: "Import source" }));
+    await user.type(
+      screen.getByLabelText("Paste text"),
+      "One two three four five six seven eight nine ten."
+    );
+    await user.click(screen.getByRole("button", { name: "Review source" }));
+    await user.click(screen.getByRole("button", { name: "Save source" }));
+    await user.click(screen.getByRole("button", { name: /Untitled source/ }));
+    await user.click(screen.getByRole("button", { name: "Focus Reader" }));
+    await user.click(screen.getByRole("button", { name: "Play" }));
+
+    Object.defineProperty(document, "visibilityState", {
+      configurable: true,
+      value: "hidden"
+    });
+    fireEvent(document, new Event("visibilitychange"));
+
     expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
   });
 });

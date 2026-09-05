@@ -286,6 +286,15 @@ textarea.text-input {
 }
 
 .reader-controls {
+  transition: opacity 180ms ease;
+}
+
+.reader-controls.controls-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.reader-controls {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 1rem;

@@ -11,6 +11,16 @@ describe("PWA shell", () => {
 
     expect(manifest.display).toBe("standalone");
     expect(manifest.start_url).toBe("/");
+    expect(manifest.icons).toEqual([
+      expect.objectContaining({
+        sizes: "192x192",
+        src: "/icons/focus-reader-192.svg"
+      }),
+      expect.objectContaining({
+        sizes: "512x512",
+        src: "/icons/focus-reader-512.svg"
+      })
+    ]);
     expect(serviceWorker).toContain('"/"');
     expect(serviceWorker).toContain('"/manifest.webmanifest"');
   });

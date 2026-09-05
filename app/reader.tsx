@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { updateSourcePosition } from "../lib/source-content";
 import type { SourceContent } from "../lib/source-content";
 
 type ReaderProps = {
@@ -15,7 +16,13 @@ export function Reader({ source, onBack }: ReaderProps) {
   const [wordIndex, setWordIndex] = useState(source.lastPosition);
   const [isPlaying, setIsPlaying] = useState(false);
   const [wordsPerMinute, setWordsPerMinute] = useState(300);
+  const [rewindWords, setRewindWords] = useState(3);
+  const [controlsVisible, setControlsVisible] = useState(true);
   const words = useMemo(() => source.text.trim().split(/\s+/).filter(Boolean), [source.text]);
+
+  useEffect(() => {
+    updateSourcePosition(source.id, wordIndex);
+  }, [source.id, wordIndex]);
 
   useEffect(() => {
     if (!isPlaying || mode !== "focus") return;
@@ -33,8 +40,38 @@ export function Reader({ source, onBack }: ReaderProps) {
     return () => window.clearInterval(interval);
   }, [isPlaying, mode, words.length, wordsPerMinute]);
 
+  useEffect(() => {
+    function pauseWhenHidden() {
+      if (document.visibilityState === "hidden" && isPlaying) {
+        setIsPlaying(false);
+        setWordIndex((current) => Math.max(0, current - rewindWords));
+      }
+    }
+
+    document.addEventListener("visibilitychange", pauseWhenHidden);
+    return () => document.removeEventListener("visibilitychange", pauseWhenHidden);
+  }, [isPlaying, rewindWords]);
+
+  useEffect(() => {
+    if (!isPlaying || mode !== "focus") return;
+    const timeout = window.setTimeout(() => setControlsVisible(false), 2500);
+    return () => window.clearTimeout(timeout);
+  }, [isPlaying, mode, wordIndex]);
+
+  function pause() {
+    setIsPlaying(false);
+    setWordIndex((current) => Math.max(0, current - rewindWords));
+    setControlsVisible(true);
+  }
+
   return (
-    <section className="reader" aria-labelledby="reader-title">
+    <section
+      className="reader"
+      aria-labelledby="reader-title"
+      onKeyDown={() => setControlsVisible(true)}
+      onPointerMove={() => setControlsVisible(true)}
+      onTouchStart={() => setControlsVisible(true)}
+    >
       <div className="reader-toolbar">
         <button className="secondary-action" onClick={onBack} type="button">
           Back to library
@@ -67,7 +104,7 @@ export function Reader({ source, onBack }: ReaderProps) {
       ) : (
         <p className="conventional-text">{source.text}</p>
       )}
-      <div className="reader-controls">
+      <div className={`reader-controls ${controlsVisible ? "" : "controls-hidden"}`}>
         <label htmlFor="reading-speed">
           Speed
           <input
@@ -81,9 +118,23 @@ export function Reader({ source, onBack }: ReaderProps) {
           />
           <span>{wordsPerMinute} WPM</span>
         </label>
+        {mode === "focus" && (
+          <label htmlFor="rewind-words">
+            Pause rewind
+            <input
+              id="rewind-words"
+              max="10"
+              min="0"
+              onChange={(event) => setRewindWords(Number(event.target.value))}
+              type="number"
+              value={rewindWords}
+            />
+            <span>words</span>
+          </label>
+        )}
         <button
           className="primary-action"
-          onClick={() => setIsPlaying((playing) => !playing)}
+          onClick={() => (isPlaying ? pause() : setIsPlaying(true))}
           type="button"
         >
           {isPlaying ? "Pause" : "Play"}
