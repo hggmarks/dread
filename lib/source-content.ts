@@ -5,6 +5,14 @@ export type SourceContent = {
   createdAt: string;
   lastPosition: number;
   processingStatus: "ready";
+  originalFileName?: string;
+  pageReferences?: PageReference[];
+};
+
+export type PageReference = {
+  page: number;
+  startWord: number;
+  endWord: number;
 };
 
 const STORAGE_KEY = "focus-reader:sources";
@@ -39,13 +47,18 @@ export function deleteSource(id: string) {
   saveSources(loadSources().filter((source) => source.id !== id));
 }
 
-export function createSource(text: string, title = "Untitled source"): SourceContent {
+export function createSource(
+  text: string,
+  title = "Untitled source",
+  metadata: Pick<SourceContent, "originalFileName" | "pageReferences"> = {}
+): SourceContent {
   return {
     id: crypto.randomUUID(),
     title,
     text,
     createdAt: new Date().toISOString(),
     lastPosition: 0,
-    processingStatus: "ready"
+    processingStatus: "ready",
+    ...metadata
   };
 }

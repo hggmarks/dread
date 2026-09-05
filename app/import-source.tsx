@@ -1,22 +1,56 @@
 "use client";
 
 import React, { ChangeEvent, FormEvent, useState } from "react";
+import { extractPdf } from "../lib/pdf-extraction";
+import type { PageReference } from "../lib/source-content";
+
+type PdfMetadata = {
+  originalFileName: string;
+  pageReferences: PageReference[];
+};
 
 type ImportSourceProps = {
   onCancel: () => void;
   onSave: (title: string, text: string) => void;
+  onSavePdf: (
+    title: string,
+    text: string,
+    metadata: PdfMetadata
+  ) => void;
 };
 
-export function ImportSource({ onCancel, onSave }: ImportSourceProps) {
+export function ImportSource({ onCancel, onSave, onSavePdf }: ImportSourceProps) {
   const [title, setTitle] = useState("");
   const [text, setText] = useState("");
   const [isPreview, setIsPreview] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [pdfMetadata, setPdfMetadata] = useState<PdfMetadata | null>(null);
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
 
     setTitle(file.name.replace(/\.[^.]+$/, ""));
+    setError(null);
+    if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
+      setIsProcessing(true);
+      void extractPdf(file)
+        .then((result) => {
+          setText(result.text);
+          setPdfMetadata({
+            originalFileName: file.name,
+            pageReferences: result.pageReferences
+          });
+        })
+        .catch((reason: unknown) => {
+          setError(reason instanceof Error ? reason.message : "Unable to read this PDF.");
+          setText("");
+        })
+        .finally(() => setIsProcessing(false));
+      return;
+    }
+
     void file.text().then(setText);
   }
 
@@ -46,7 +80,11 @@ export function ImportSource({ onCancel, onSave }: ImportSourceProps) {
           <button
             className="primary-action"
             disabled={!text.trim()}
-            onClick={() => onSave(title.trim() || "Untitled source", text.trim())}
+            onClick={() =>
+              pdfMetadata
+                ? onSavePdf(title.trim() || "Untitled source", text.trim(), pdfMetadata)
+                : onSave(title.trim() || "Untitled source", text.trim())
+            }
             type="button"
           >
             Save source
@@ -82,19 +120,21 @@ export function ImportSource({ onCancel, onSave }: ImportSourceProps) {
           value={text}
         />
         <label className="file-action" htmlFor="source-file">
-          Choose a plain-text file
+          Choose a text or PDF file
           <input
-            accept=".txt,text/plain"
+            accept=".txt,.pdf,text/plain,application/pdf"
             id="source-file"
             onChange={handleFileChange}
             type="file"
           />
         </label>
+        {isProcessing && <p role="status">Processing PDF locally…</p>}
+        {error && <p className="error-message" role="alert">{error}</p>}
         <div className="form-actions">
           <button className="secondary-action" onClick={onCancel} type="button">
             Cancel
           </button>
-          <button className="primary-action" disabled={!text.trim()} type="submit">
+          <button className="primary-action" disabled={!text.trim() || isProcessing} type="submit">
             Review source
           </button>
         </div>

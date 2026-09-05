@@ -175,6 +175,11 @@ textarea.text-input {
   max-width: 100%;
 }
 
+.error-message {
+  color: #f2a6a6;
+  line-height: 1.5;
+}
+
 .form-actions,
 .library-heading {
   align-items: center;

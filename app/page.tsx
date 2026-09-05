@@ -8,6 +8,7 @@ import {
   saveSources,
   SourceContent
 } from "../lib/source-content";
+import type { PageReference } from "../lib/source-content";
 import { ImportSource } from "./import-source";
 import { InstallPrompt } from "./install-prompt";
 import { Reader } from "./reader";
@@ -47,6 +48,20 @@ export default function HomePage() {
     setSources(nextSources);
     saveSources(nextSources);
     setIsImporting(false);
+  }
+
+  function handlePdfSave(
+    title: string,
+    text: string,
+    metadata: { originalFileName: string; pageReferences: PageReference[] }
+  ) {
+    const existing = sources.find((source) => source.title === title && source.text === text);
+    if (existing) {
+      setDuplicate({ title, text, existing });
+      setIsImporting(false);
+      return;
+    }
+    addSource(createSource(text, title, metadata));
   }
 
   function replaceDuplicate() {
@@ -122,7 +137,11 @@ export default function HomePage() {
           reading experience. Your library stays on this device.
         </p>
         {isImporting ? (
-          <ImportSource onCancel={() => setIsImporting(false)} onSave={handleSave} />
+          <ImportSource
+            onCancel={() => setIsImporting(false)}
+            onSave={handleSave}
+            onSavePdf={handlePdfSave}
+          />
         ) : sources.length > 0 ? (
           <div className="library" aria-label="Source library">
             <div className="library-heading">

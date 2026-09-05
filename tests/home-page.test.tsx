@@ -1,8 +1,15 @@
 import React from "react";
 import { fireEvent, render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import HomePage from "../app/page";
+
+vi.mock("../lib/pdf-extraction", () => ({
+  extractPdf: vi.fn().mockResolvedValue({
+    text: "Extracted book text.",
+    pageReferences: [{ page: 1, startWord: 0, endWord: 2 }]
+  })
+}));
 
 describe("Focus Reader home page", () => {
   beforeEach(() => window.localStorage.clear());
@@ -133,5 +140,22 @@ describe("Focus Reader home page", () => {
     window.confirm = () => true;
     await user.click(screen.getAllByRole("button", { name: /Delete Untitled source/ })[0]);
     expect(screen.getAllByRole("button", { name: /Delete Untitled source/ })).toHaveLength(1);
+  });
+
+  it("processes a local PDF into an editable preview and preserves page references", async () => {
+    const user = userEvent.setup();
+    render(<HomePage />);
+
+    await user.click(screen.getByRole("button", { name: "Import source" }));
+    const pdf = new File(["pdf bytes"], "book.pdf", { type: "application/pdf" });
+    await user.upload(screen.getByLabelText("Choose a text or PDF file"), pdf);
+
+    expect(await screen.findByDisplayValue("Extracted book text.")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Review source" }));
+    await user.click(screen.getByRole("button", { name: "Save source" }));
+
+    const stored = JSON.parse(window.localStorage.getItem("focus-reader:sources") ?? "[]");
+    expect(stored[0].originalFileName).toBe("book.pdf");
+    expect(stored[0].pageReferences).toEqual([{ page: 1, startWord: 0, endWord: 2 }]);
   });
 });
