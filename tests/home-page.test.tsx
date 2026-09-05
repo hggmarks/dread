@@ -51,7 +51,7 @@ describe("Focus Reader home page", () => {
     );
     await user.click(screen.getByRole("button", { name: "Review source" }));
     await user.click(screen.getByRole("button", { name: "Save source" }));
-    await user.click(screen.getByRole("button", { name: /Untitled source/ }));
+    await user.click(screen.getByRole("button", { name: "Open Untitled source" }));
 
     expect(screen.getByText("Conventional Reader")).toBeInTheDocument();
     expect(screen.getByText("One two three four five six seven eight nine ten.")).toBeInTheDocument();
@@ -73,7 +73,7 @@ describe("Focus Reader home page", () => {
     );
     await user.click(screen.getByRole("button", { name: "Review source" }));
     await user.click(screen.getByRole("button", { name: "Save source" }));
-    await user.click(screen.getByRole("button", { name: /Untitled source/ }));
+    await user.click(screen.getByRole("button", { name: "Open Untitled source" }));
     await user.click(screen.getByRole("button", { name: "Focus Reader" }));
     await user.click(screen.getByRole("button", { name: "Play" }));
 
@@ -95,7 +95,7 @@ describe("Focus Reader home page", () => {
     );
     await user.click(screen.getByRole("button", { name: "Review source" }));
     await user.click(screen.getByRole("button", { name: "Save source" }));
-    await user.click(screen.getByRole("button", { name: /Untitled source/ }));
+    await user.click(screen.getByRole("button", { name: "Open Untitled source" }));
     await user.click(screen.getByRole("button", { name: "Focus Reader" }));
     await user.click(screen.getByRole("button", { name: "Play" }));
 
@@ -106,5 +106,32 @@ describe("Focus Reader home page", () => {
     fireEvent(document, new Event("visibilitychange"));
 
     expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
+  });
+
+  it("offers replacement or copy for duplicate imports and deletes a source after confirmation", async () => {
+    const user = userEvent.setup();
+    render(<HomePage />);
+
+    async function importSource() {
+      await user.click(screen.getByRole("button", { name: "Import source" }));
+      await user.type(screen.getByLabelText("Paste text"), "A repeated source.");
+      await user.click(screen.getByRole("button", { name: "Review source" }));
+      await user.click(screen.getByRole("button", { name: "Save source" }));
+    }
+
+    await importSource();
+    expect(screen.getByRole("heading", { name: "Your library" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Import source" }));
+    await user.type(screen.getByLabelText("Paste text"), "A repeated source.");
+    await user.click(screen.getByRole("button", { name: "Review source" }));
+    await user.click(screen.getByRole("button", { name: "Save source" }));
+
+    expect(screen.getByRole("heading", { name: "What should happen with this import?" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Create a copy" }));
+    expect(screen.getAllByRole("button", { name: /Delete Untitled source/ })).toHaveLength(2);
+
+    window.confirm = () => true;
+    await user.click(screen.getAllByRole("button", { name: /Delete Untitled source/ })[0]);
+    expect(screen.getAllByRole("button", { name: /Delete Untitled source/ })).toHaveLength(1);
   });
 });

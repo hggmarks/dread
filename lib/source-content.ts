@@ -4,6 +4,7 @@ export type SourceContent = {
   text: string;
   createdAt: string;
   lastPosition: number;
+  processingStatus: "ready";
 };
 
 const STORAGE_KEY = "focus-reader:sources";
@@ -34,12 +35,17 @@ export function updateSourcePosition(id: string, lastPosition: number) {
   saveSources(nextSources);
 }
 
+export function deleteSource(id: string) {
+  saveSources(loadSources().filter((source) => source.id !== id));
+}
+
 export function createSource(text: string, title = "Untitled source"): SourceContent {
   return {
     id: crypto.randomUUID(),
     title,
     text,
     createdAt: new Date().toISOString(),
-    lastPosition: 0
+    lastPosition: 0,
+    processingStatus: "ready"
   };
 }

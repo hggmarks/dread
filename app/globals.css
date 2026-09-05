@@ -113,7 +113,8 @@ h1 {
 }
 
 .import-panel,
-.library {
+.library,
+.dialog-panel {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 1.5rem;
@@ -214,6 +215,15 @@ textarea.text-input {
   color: var(--text);
   margin-top: 1rem;
   padding-top: 1rem;
+  position: relative;
+  width: 100%;
+}
+
+.source-card > button:first-child {
+  background: transparent;
+  border: 0;
+  color: var(--text);
+  padding: 0;
   text-align: left;
   width: 100%;
 }
@@ -226,6 +236,19 @@ textarea.text-input {
   color: var(--muted);
   line-height: 1.5;
   margin: 0;
+}
+
+.source-card small {
+  color: var(--muted);
+  display: block;
+  margin-top: 0.6rem;
+}
+
+.delete-action {
+  background: transparent;
+  border: 0;
+  color: #f2a6a6;
+  padding: 0.5rem 0;
 }
 
 .reader {
