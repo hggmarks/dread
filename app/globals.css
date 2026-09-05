@@ -1,0 +1,343 @@
+:root {
+  color-scheme: dark;
+  --background: #0c1117;
+  --surface: #131b24;
+  --surface-raised: #18232e;
+  --text: #edf4f8;
+  --muted: #9caeba;
+  --accent: #a9e8d5;
+  --accent-ink: #10251f;
+  --border: rgba(237, 244, 248, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--text);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+button,
+a {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.shell {
+  min-height: 100vh;
+  padding: 1.25rem clamp(1rem, 4vw, 4rem) 4rem;
+}
+
+.topbar {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin: 0 auto;
+  max-width: 72rem;
+}
+
+.wordmark {
+  align-items: center;
+  color: var(--text);
+  display: inline-flex;
+  font-size: 1rem;
+  font-weight: 700;
+  gap: 0.5rem;
+  letter-spacing: -0.02em;
+  text-decoration: none;
+}
+
+.wordmark-mark {
+  color: var(--accent);
+  font-size: 2rem;
+  line-height: 0;
+}
+
+.install-action,
+.primary-action {
+  border: 0;
+  border-radius: 999px;
+  font-weight: 700;
+  padding: 0.75rem 1.15rem;
+}
+
+.install-action {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.welcome {
+  margin: clamp(5rem, 16vh, 10rem) auto 0;
+  max-width: 48rem;
+  text-align: center;
+}
+
+.eyebrow {
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+h1 {
+  font-size: clamp(2.5rem, 8vw, 5.5rem);
+  letter-spacing: -0.075em;
+  line-height: 0.98;
+  margin: 1.25rem 0;
+}
+
+.lede {
+  color: var(--muted);
+  font-size: clamp(1rem, 2vw, 1.25rem);
+  line-height: 1.6;
+  margin: 0 auto;
+  max-width: 34rem;
+}
+
+.empty-library {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 1.5rem;
+  margin: 4rem auto 0;
+  max-width: 28rem;
+  padding: 2.5rem 1.5rem;
+}
+
+.import-panel,
+.library {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 1.5rem;
+  margin: 4rem auto 0;
+  max-width: 36rem;
+  padding: 2rem;
+  text-align: left;
+}
+
+.import-panel h2 {
+  text-align: center;
+}
+
+.field-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin: 1.25rem 0 0.5rem;
+}
+
+.field-label span {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.text-input {
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  color: var(--text);
+  display: block;
+  padding: 0.8rem;
+  width: 100%;
+}
+
+textarea.text-input {
+  min-height: 10rem;
+  resize: vertical;
+}
+
+.preview-input {
+  min-height: 18rem !important;
+}
+
+.file-action {
+  border: 1px dashed var(--border);
+  border-radius: 0.75rem;
+  color: var(--muted);
+  display: block;
+  margin-top: 1rem;
+  padding: 0.8rem;
+  text-align: center;
+}
+
+.file-action input {
+  display: block;
+  margin: 0.6rem auto 0;
+  max-width: 100%;
+}
+
+.form-actions,
+.library-heading {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  margin-top: 1.5rem;
+}
+
+.secondary-action {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text);
+  padding: 0.75rem 1.15rem;
+}
+
+.primary-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.library-heading {
+  justify-content: space-between;
+  margin-top: 0;
+}
+
+.library-heading h2 {
+  margin: 0;
+}
+
+.source-card {
+  background: transparent;
+  border-top: 1px solid var(--border);
+  border-right: 0;
+  border-bottom: 0;
+  border-left: 0;
+  color: var(--text);
+  margin-top: 1rem;
+  padding-top: 1rem;
+  text-align: left;
+  width: 100%;
+}
+
+.source-card h3 {
+  margin: 0 0 0.4rem;
+}
+
+.source-card p {
+  color: var(--muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.reader {
+  margin: clamp(3rem, 10vh, 7rem) auto 0;
+  max-width: 52rem;
+  padding: 0 1rem 4rem;
+}
+
+.reader-toolbar,
+.reader-controls {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.mode-switch {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  display: flex;
+  padding: 0.25rem;
+}
+
+.mode-switch button {
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  color: var(--muted);
+  padding: 0.5rem 0.75rem;
+}
+
+.mode-switch .mode-active {
+  background: var(--surface-raised);
+  color: var(--text);
+}
+
+.reader > h2 {
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  margin: 0.5rem 0 2rem;
+}
+
+.conventional-text {
+  color: var(--muted);
+  font-size: 1.2rem;
+  line-height: 1.8;
+  white-space: pre-wrap;
+}
+
+.focus-stage {
+  align-items: center;
+  display: flex;
+  font-size: clamp(3rem, 12vw, 8rem);
+  font-weight: 700;
+  justify-content: center;
+  letter-spacing: -0.06em;
+  min-height: 45vh;
+  text-align: center;
+}
+
+.reader-controls {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.reader-controls label {
+  align-items: center;
+  color: var(--muted);
+  display: flex;
+  gap: 0.75rem;
+}
+
+.reader-controls input {
+  accent-color: var(--accent);
+}
+
+@media (max-width: 600px) {
+  .reader-toolbar,
+  .reader-controls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
+.empty-icon {
+  align-items: center;
+  background: var(--surface-raised);
+  border-radius: 50%;
+  color: var(--accent);
+  display: flex;
+  font-size: 2rem;
+  height: 3.5rem;
+  justify-content: center;
+  margin: 0 auto 1.5rem;
+  width: 3.5rem;
+}
+
+h2 {
+  font-size: 1.35rem;
+  margin: 0 0 0.75rem;
+}
+
+.empty-library p {
+  color: var(--muted);
+  line-height: 1.5;
+  margin: 0 auto 1.5rem;
+  max-width: 22rem;
+}
+
+.primary-action {
+  background: var(--accent);
+  color: var(--accent-ink);
+}

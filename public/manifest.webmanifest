@@ -1,0 +1,10 @@
+{
+  "name": "Focus Reader",
+  "short_name": "Focus Reader",
+  "description": "A calm, local-first reader for focused reading.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0c1117",
+  "theme_color": "#0c1117",
+  "icons": []
+}
