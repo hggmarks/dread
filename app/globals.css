@@ -302,6 +302,68 @@ textarea.text-input {
   white-space: pre-wrap;
 }
 
+.word-button,
+.current-word {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+}
+
+.current-word {
+  background: var(--accent);
+  border-radius: 0.2rem;
+  color: var(--accent-ink);
+}
+
+.navigation-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  display: grid;
+  gap: 1rem;
+  margin: 1.5rem 0;
+  padding: 1rem;
+}
+
+.navigation-panel > label,
+.bookmark-form {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+}
+
+.navigation-panel input[type="range"] {
+  accent-color: var(--accent);
+  flex: 1;
+}
+
+.bookmark-form input,
+.navigation-panel select {
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  color: var(--text);
+  min-width: 0;
+  padding: 0.55rem;
+}
+
+.bookmark-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.bookmark-list button {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text);
+  padding: 0.5rem 0.75rem;
+}
+
 .focus-stage {
   align-items: center;
   display: flex;

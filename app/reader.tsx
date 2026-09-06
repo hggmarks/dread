@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { updateSourcePosition } from "../lib/source-content";
-import type { SourceContent } from "../lib/source-content";
+import type { Bookmark, SourceContent } from "../lib/source-content";
 
 type ReaderProps = {
   source: SourceContent;
@@ -18,6 +18,8 @@ export function Reader({ source, onBack }: ReaderProps) {
   const [wordsPerMinute, setWordsPerMinute] = useState(300);
   const [rewindWords, setRewindWords] = useState(3);
   const [controlsVisible, setControlsVisible] = useState(true);
+  const [bookmarks, setBookmarks] = useState<Bookmark[]>(source.bookmarks ?? []);
+  const [bookmarkLabel, setBookmarkLabel] = useState("");
   const words = useMemo(() => source.text.trim().split(/\s+/).filter(Boolean), [source.text]);
 
   useEffect(() => {
@@ -64,6 +66,32 @@ export function Reader({ source, onBack }: ReaderProps) {
     setControlsVisible(true);
   }
 
+  function jumpTo(index: number) {
+    setIsPlaying(false);
+    setWordIndex(Math.max(0, Math.min(index, words.length - 1)));
+    setControlsVisible(true);
+  }
+
+  function addBookmark() {
+    const label = bookmarkLabel.trim();
+    if (!label) return;
+    const nextBookmarks = [
+      ...bookmarks,
+      { id: crypto.randomUUID(), label, wordIndex }
+    ];
+    setBookmarks(nextBookmarks);
+    window.localStorage.setItem(
+      "focus-reader:sources",
+      JSON.stringify(
+        JSON.parse(window.localStorage.getItem("focus-reader:sources") ?? "[]").map(
+          (item: SourceContent) =>
+            item.id === source.id ? { ...item, bookmarks: nextBookmarks } : item
+        )
+      )
+    );
+    setBookmarkLabel("");
+  }
+
   return (
     <section
       className="reader"
@@ -102,8 +130,83 @@ export function Reader({ source, onBack }: ReaderProps) {
           <span>{words[wordIndex] ?? ""}</span>
         </div>
       ) : (
-        <p className="conventional-text">{source.text}</p>
+        <p className="conventional-text">
+          {words.map((word, index) => (
+            <React.Fragment key={`${word}-${index}`}>
+              <button
+                className={index === wordIndex ? "current-word" : "word-button"}
+                onClick={() => jumpTo(index)}
+                type="button"
+              >
+                {word}
+              </button>{" "}
+            </React.Fragment>
+          ))}
+        </p>
       )}
+      <div className="navigation-panel" aria-label="Reading navigation">
+        <label htmlFor="progress">
+          Progress
+          <input
+            aria-label="Progress"
+            id="progress"
+            max={Math.max(0, words.length - 1)}
+            min="0"
+            onChange={(event) => jumpTo(Number(event.target.value))}
+            type="range"
+            value={wordIndex}
+          />
+          <span>{words.length ? Math.round((wordIndex / (words.length - 1)) * 100) : 0}%</span>
+        </label>
+        {source.pageReferences && source.pageReferences.length > 0 && (
+          <label htmlFor="page-reference">
+            Page
+            <select
+              id="page-reference"
+              onChange={(event) => {
+                const reference = source.pageReferences?.find(
+                  (item) => item.page === Number(event.target.value)
+                );
+                if (reference) jumpTo(reference.startWord);
+              }}
+              value={source.pageReferences.find(
+                (reference) => wordIndex >= reference.startWord && wordIndex <= reference.endWord
+              )?.page ?? ""}
+            >
+              {source.pageReferences.map((reference) => (
+                <option key={reference.page} value={reference.page}>
+                  {reference.page}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+        <form
+          className="bookmark-form"
+          onSubmit={(event) => {
+            event.preventDefault();
+            addBookmark();
+          }}
+        >
+          <label htmlFor="bookmark-label">Bookmark</label>
+          <input
+            id="bookmark-label"
+            onChange={(event) => setBookmarkLabel(event.target.value)}
+            placeholder="Name this position"
+            value={bookmarkLabel}
+          />
+          <button className="secondary-action" type="submit">Save bookmark</button>
+        </form>
+        {bookmarks.length > 0 && (
+          <div className="bookmark-list" aria-label="Named bookmarks" role="region">
+            {bookmarks.map((bookmark) => (
+              <button key={bookmark.id} onClick={() => jumpTo(bookmark.wordIndex)} type="button">
+                {bookmark.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
       <div className={`reader-controls ${controlsVisible ? "" : "controls-hidden"}`}>
         <label htmlFor="reading-speed">
           Speed

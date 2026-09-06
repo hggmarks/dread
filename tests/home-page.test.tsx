@@ -61,7 +61,7 @@ describe("Focus Reader home page", () => {
     await user.click(screen.getByRole("button", { name: "Open Untitled source" }));
 
     expect(screen.getByText("Conventional Reader")).toBeInTheDocument();
-    expect(screen.getByText("One two three four five six seven eight nine ten.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "One" })).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Focus Reader" }));
     expect(screen.getByRole("group", { name: "Reading mode" })).toBeInTheDocument();
@@ -157,5 +157,26 @@ describe("Focus Reader home page", () => {
     const stored = JSON.parse(window.localStorage.getItem("focus-reader:sources") ?? "[]");
     expect(stored[0].originalFileName).toBe("book.pdf");
     expect(stored[0].pageReferences).toEqual([{ page: 1, startWord: 0, endWord: 2 }]);
+  });
+
+  it("synchronizes word navigation and saves named bookmarks", async () => {
+    const user = userEvent.setup();
+    render(<HomePage />);
+
+    await user.click(screen.getByRole("button", { name: "Import source" }));
+    await user.type(screen.getByLabelText("Paste text"), "One two three four.");
+    await user.click(screen.getByRole("button", { name: "Review source" }));
+    await user.click(screen.getByRole("button", { name: "Save source" }));
+    await user.click(screen.getByRole("button", { name: "Open Untitled source" }));
+
+    await user.click(screen.getByRole("button", { name: "Focus Reader" }));
+    await user.click(screen.getByLabelText("Progress"));
+    await user.type(screen.getByLabelText("Bookmark"), "Important");
+    await user.click(screen.getByRole("button", { name: "Save bookmark" }));
+
+    expect(screen.getByRole("region", { name: "Named bookmarks" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Important" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Conventional" }));
+    expect(screen.getByRole("button", { name: "One" })).toBeInTheDocument();
   });
 });

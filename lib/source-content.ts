@@ -7,6 +7,13 @@ export type SourceContent = {
   processingStatus: "ready";
   originalFileName?: string;
   pageReferences?: PageReference[];
+  bookmarks?: Bookmark[];
+};
+
+export type Bookmark = {
+  id: string;
+  label: string;
+  wordIndex: number;
 };
 
 export type PageReference = {
@@ -50,7 +57,7 @@ export function deleteSource(id: string) {
 export function createSource(
   text: string,
   title = "Untitled source",
-  metadata: Pick<SourceContent, "originalFileName" | "pageReferences"> = {}
+  metadata: Pick<SourceContent, "originalFileName" | "pageReferences" | "bookmarks"> = {}
 ): SourceContent {
   return {
     id: crypto.randomUUID(),
