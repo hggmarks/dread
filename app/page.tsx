@@ -47,9 +47,13 @@ export default function HomePage() {
 
   function addSource(source: SourceContent) {
     const nextSources = [source, ...sources];
-    setSources(nextSources);
-    saveSources(nextSources);
-    setIsImporting(false);
+    try {
+      saveSources(nextSources);
+      setSources(nextSources);
+      setIsImporting(false);
+    } catch (reason: unknown) {
+      window.alert(reason instanceof Error ? reason.message : "Unable to save this source locally.");
+    }
   }
 
   function handlePdfSave(
@@ -83,9 +87,13 @@ export default function HomePage() {
       replacement,
       ...sources.filter((source) => source.id !== duplicate.existing.id)
     ];
-    setSources(nextSources);
-    saveSources(nextSources);
-    setDuplicate(null);
+    try {
+      saveSources(nextSources);
+      setSources(nextSources);
+      setDuplicate(null);
+    } catch (reason: unknown) {
+      window.alert(reason instanceof Error ? reason.message : "Unable to replace this source locally.");
+    }
   }
 
   function copyDuplicate() {
@@ -120,8 +128,8 @@ export default function HomePage() {
     try {
       const imported = parseLibraryExport(new Uint8Array(await file.arrayBuffer()));
       const nextSources = [...imported, ...sources];
-      setSources(nextSources);
       saveSources(nextSources);
+      setSources(nextSources);
     } catch (reason: unknown) {
       window.alert(reason instanceof Error ? reason.message : "Unable to import this library.");
     } finally {

@@ -14,6 +14,19 @@ export type SourceContent = {
   pageReferences?: PageReference[];
   bookmarks?: Bookmark[];
   chapters?: Chapter[];
+  sessionMetrics?: ReadingSessionMetric[];
+};
+
+export type ReadingSessionMetric = {
+  id: string;
+  startedAt: string;
+  endedAt: string;
+  durationSeconds: number;
+  wordsRead: number;
+  averageWpm: number;
+  pauses: number;
+  completion: number;
+  selfAssessment?: number;
 };
 
 export type Chapter = {
@@ -36,6 +49,13 @@ export type PageReference = {
 
 const STORAGE_KEY = "focus-reader:sources";
 
+export class StorageFailure extends Error {
+  constructor(message = "Unable to save the local library. Export your library or remove unused sources and try again.") {
+    super(message);
+    this.name = "StorageFailure";
+  }
+}
+
 export function loadSources(): SourceContent[] {
   if (typeof window === "undefined") return [];
 
@@ -51,7 +71,11 @@ export function loadSources(): SourceContent[] {
 }
 
 export function saveSources(sources: SourceContent[]) {
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(sources));
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(sources));
+  } catch {
+    throw new StorageFailure();
+  }
 }
 
 export function updateSourcePosition(id: string, lastPosition: number) {
@@ -92,6 +116,7 @@ export function createSource(
   metadata: Pick<
     SourceContent,
     "originalFileName" | "originalFile" | "pageReferences" | "bookmarks" | "chapters"
+    | "sessionMetrics"
   > = {}
 ): SourceContent {
   return {

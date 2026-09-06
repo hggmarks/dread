@@ -255,4 +255,26 @@ describe("Focus Reader home page", () => {
     expect(screen.getByLabelText("Import library")).toBeInTheDocument();
     expect(screen.getByRole("checkbox", { name: "Select Untitled source for export" })).toBeInTheDocument();
   });
+
+  it("records local session metrics and an optional self-assessment", async () => {
+    const user = userEvent.setup();
+    render(<HomePage />);
+    await user.click(screen.getByRole("button", { name: "Import source" }));
+    await user.type(screen.getByLabelText("Paste text"), "One two three four.");
+    await user.click(screen.getByRole("button", { name: "Review source" }));
+    await user.click(screen.getByRole("button", { name: "Save source" }));
+    await user.click(screen.getByRole("button", { name: "Open Untitled source" }));
+    await user.click(screen.getByRole("button", { name: "Focus Reader" }));
+    fireEvent.change(screen.getByLabelText("Progress"), { target: { value: "2" } });
+    await user.selectOptions(await screen.findByLabelText("Self-assessment"), "4");
+    await user.click(screen.getByRole("button", { name: "Finish session" }));
+
+    expect(screen.getByRole("status")).toHaveTextContent("Last session:");
+    const stored = JSON.parse(window.localStorage.getItem("focus-reader:sources") ?? "[]");
+    expect(stored[0].sessionMetrics[0]).toMatchObject({
+      selfAssessment: 4,
+      wordsRead: 3,
+      pauses: 0
+    });
+  });
 });

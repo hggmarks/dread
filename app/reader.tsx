@@ -2,7 +2,11 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { updateSourcePosition } from "../lib/source-content";
-import type { Bookmark, SourceContent } from "../lib/source-content";
+import type {
+  Bookmark,
+  ReadingSessionMetric,
+  SourceContent
+} from "../lib/source-content";
 
 type ReaderProps = {
   source: SourceContent;
@@ -26,11 +30,30 @@ export function Reader({ source, onBack }: ReaderProps) {
   const [textScale, setTextScale] = useState(100);
   const [anchorPosition, setAnchorPosition] = useState(50);
   const [timingProfile, setTimingProfile] = useState<TimingProfile>("uniform");
+  const [sessionPrompts, setSessionPrompts] = useState(true);
+  const [promptMilestone, setPromptMilestone] = useState(50);
+  const [assessment, setAssessment] = useState<number | null>(null);
+  const [lastSession, setLastSession] = useState<ReadingSessionMetric | null>(null);
+  const [milestonePromptVisible, setMilestonePromptVisible] = useState(false);
+  const sessionStartedAt = React.useRef(Date.now());
+  const sessionStartWord = React.useRef(wordIndex);
+  const pauses = React.useRef(0);
+  const promptedMilestone = React.useRef(false);
   const words = useMemo(() => source.text.trim().split(/\s+/).filter(Boolean), [source.text]);
 
   useEffect(() => {
     updateSourcePosition(source.id, wordIndex);
-  }, [source.id, wordIndex]);
+    if (
+      sessionPrompts &&
+      !promptedMilestone.current &&
+      words.length > 0 &&
+      wordIndex >= Math.floor((words.length - 1) * (promptMilestone / 100))
+    ) {
+      promptedMilestone.current = true;
+      setMilestonePromptVisible(true);
+      setControlsVisible(true);
+    }
+  }, [source.id, wordIndex, words.length, promptMilestone, sessionPrompts]);
 
   useEffect(() => {
     if (!isPlaying || mode !== "focus") return;
@@ -71,8 +94,37 @@ export function Reader({ source, onBack }: ReaderProps) {
 
   function pause() {
     setIsPlaying(false);
+    pauses.current += 1;
     setWordIndex((current) => Math.max(0, current - rewindWords));
     setControlsVisible(true);
+  }
+
+  function finishSession() {
+    const endedAt = Date.now();
+    const durationSeconds = Math.max(1, Math.round((endedAt - sessionStartedAt.current) / 1000));
+    const wordsRead = Math.max(0, wordIndex - sessionStartWord.current + 1);
+    const metric: ReadingSessionMetric = {
+      id: crypto.randomUUID(),
+      startedAt: new Date(sessionStartedAt.current).toISOString(),
+      endedAt: new Date(endedAt).toISOString(),
+      durationSeconds,
+      wordsRead,
+      averageWpm: Math.round((wordsRead / durationSeconds) * 60),
+      pauses: pauses.current,
+      completion: words.length ? Math.round(((wordIndex + 1) / words.length) * 100) : 0,
+      ...(assessment === null ? {} : { selfAssessment: assessment })
+    };
+    const stored = JSON.parse(
+      window.localStorage.getItem("focus-reader:sources") ?? "[]"
+    ) as SourceContent[];
+    const next = stored.map((item) =>
+      item.id === source.id
+        ? { ...item, sessionMetrics: [...(item.sessionMetrics ?? []), metric] }
+        : item
+    );
+    window.localStorage.setItem("focus-reader:sources", JSON.stringify(next));
+    setLastSession(metric);
+    setIsPlaying(false);
   }
 
   function jumpTo(index: number) {
@@ -116,7 +168,14 @@ export function Reader({ source, onBack }: ReaderProps) {
       onTouchStart={() => setControlsVisible(true)}
     >
       <div className="reader-toolbar">
-        <button className="secondary-action" onClick={onBack} type="button">
+        <button
+          className="secondary-action"
+          onClick={() => {
+            finishSession();
+            onBack();
+          }}
+          type="button"
+        >
           Back to library
         </button>
         <div className="mode-switch" role="group" aria-label="Reading mode">
@@ -167,6 +226,24 @@ export function Reader({ source, onBack }: ReaderProps) {
         </p>
       )}
       <div className="navigation-panel" aria-label="Reading navigation">
+        {sessionPrompts && milestonePromptVisible && (
+          <div className="session-prompt" role="region" aria-label="Reading milestone">
+            <strong>How is your understanding so far?</strong>
+            <label htmlFor="self-assessment">Self-assessment</label>
+            <select
+              id="self-assessment"
+              onChange={(event) => setAssessment(Number(event.target.value))}
+              value={assessment ?? ""}
+            >
+              <option value="">Not now</option>
+              <option value="1">1 - unclear</option>
+              <option value="2">2</option>
+              <option value="3">3 - fair</option>
+              <option value="4">4</option>
+              <option value="5">5 - clear</option>
+            </select>
+          </div>
+        )}
         <label htmlFor="progress">
           Progress
           <input
@@ -308,6 +385,30 @@ export function Reader({ source, onBack }: ReaderProps) {
                   <option value="boundary-aware">Boundary-aware</option>
                 </select>
               </label>
+              <label htmlFor="session-prompts">
+                Session prompts
+                <input
+                  checked={sessionPrompts}
+                  id="session-prompts"
+                  onChange={(event) => setSessionPrompts(event.target.checked)}
+                  type="checkbox"
+                />
+              </label>
+              {sessionPrompts && (
+                <label htmlFor="prompt-milestone">
+                  Prompt at
+                  <select
+                    id="prompt-milestone"
+                    onChange={(event) => setPromptMilestone(Number(event.target.value))}
+                    value={promptMilestone}
+                  >
+                    <option value="25">25%</option>
+                    <option value="50">50%</option>
+                    <option value="75">75%</option>
+                    <option value="100">100%</option>
+                  </select>
+                </label>
+              )}
             </>
           )}
         </div>
@@ -318,6 +419,15 @@ export function Reader({ source, onBack }: ReaderProps) {
         >
           {isPlaying ? "Pause" : "Play"}
         </button>
+        <button className="secondary-action" onClick={finishSession} type="button">
+          Finish session
+        </button>
+        {lastSession && (
+          <div className="session-summary" role="status">
+            Last session: {lastSession.wordsRead} words, {lastSession.averageWpm} WPM,
+            {lastSession.pauses} pauses, {lastSession.completion}% complete.
+          </div>
+        )}
       </div>
     </section>
   );

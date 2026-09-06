@@ -14,6 +14,8 @@ type PdfMetadata = {
   pageReferences: PageReference[];
 };
 
+const MAX_IMPORT_BYTES = 10 * 1024 * 1024;
+
 async function encodeOriginalFile(file: File): Promise<string> {
   if (typeof file.arrayBuffer !== "function") {
     const fallbackBytes = new TextEncoder().encode(file.name);
@@ -52,6 +54,10 @@ export function ImportSource({ onCancel, onSave, onSavePdf }: ImportSourceProps)
 
     setTitle(file.name.replace(/\.[^.]+$/, ""));
     setError(null);
+    if (file.size > MAX_IMPORT_BYTES) {
+      setError("This source is larger than the 10 MB local import limit.");
+      return;
+    }
     if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
       setIsProcessing(true);
       void Promise.all([
@@ -67,14 +73,28 @@ export function ImportSource({ onCancel, onSave, onSavePdf }: ImportSourceProps)
           });
         })
         .catch((reason: unknown) => {
-          setError(reason instanceof Error ? reason.message : "Unable to read this PDF.");
+          setError(
+            reason instanceof Error
+              ? `PDF extraction failed: ${reason.message}`
+              : "PDF extraction failed. This PDF may be malformed or scanned."
+          );
           setText("");
         })
         .finally(() => setIsProcessing(false));
       return;
     }
 
-    void file.text().then(setText);
+    if (!file.type && !file.name.toLowerCase().endsWith(".txt")) {
+      setError("Unsupported format. Choose a plain-text (.txt) or PDF file.");
+      return;
+    }
+    if (typeof file.text !== "function") {
+      setError("This browser could not read the selected text file.");
+      return;
+    }
+    void file.text().then(setText).catch(() => {
+      setError("Text processing failed. Choose another file or paste the text instead.");
+    });
   }
 
   function handlePreview(event: FormEvent<HTMLFormElement>) {
@@ -153,6 +173,11 @@ export function ImportSource({ onCancel, onSave, onSavePdf }: ImportSourceProps)
         </label>
         {isProcessing && <p role="status">Processing PDF locally…</p>}
         {error && <p className="error-message" role="alert">{error}</p>}
+        {error && (
+          <button className="secondary-action" onClick={onCancel} type="button">
+            Discard failed import
+          </button>
+        )}
         <div className="form-actions">
           <button className="secondary-action" onClick={onCancel} type="button">
             Cancel
