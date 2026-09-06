@@ -236,6 +236,7 @@ describe("Focus Reader home page", () => {
       lastPosition: 1,
       processingStatus: "ready" as const,
       originalFileName: "book.pdf",
+      originalFile: { fileName: "book.pdf", mimeType: "application/pdf", base64: "AQI=" },
       bookmarks: [{ id: "bookmark-1", label: "Important", wordIndex: 1 }]
     };
 
@@ -252,5 +253,6 @@ describe("Focus Reader home page", () => {
 
     expect(screen.getByRole("button", { name: "Export library" })).toBeInTheDocument();
     expect(screen.getByLabelText("Import library")).toBeInTheDocument();
+    expect(screen.getByRole("checkbox", { name: "Select Untitled source for export" })).toBeInTheDocument();
   });
 });

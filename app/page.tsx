@@ -23,6 +23,7 @@ export default function HomePage() {
     text: string;
     existing: SourceContent;
   } | null>(null);
+  const [selectedSourceIds, setSelectedSourceIds] = useState<string[]>([]);
 
   useEffect(() => {
     setSources(
@@ -54,7 +55,11 @@ export default function HomePage() {
   function handlePdfSave(
     title: string,
     text: string,
-    metadata: { originalFileName: string; pageReferences: PageReference[] }
+    metadata: {
+      originalFileName: string;
+      originalFile: SourceContent["originalFile"];
+      pageReferences: PageReference[];
+    }
   ) {
     const existing = sources.find((source) => source.title === title && source.text === text);
     if (existing) {
@@ -96,7 +101,10 @@ export default function HomePage() {
   }
 
   function exportLibrary() {
-    const bytes = createLibraryExport(sources);
+    const selected = selectedSourceIds.length
+      ? sources.filter((source) => selectedSourceIds.includes(source.id))
+      : sources;
+    const bytes = createLibraryExport(selected);
     const blobBytes = new Uint8Array(bytes);
     const url = URL.createObjectURL(new Blob([blobBytes], { type: "application/zip" }));
     const link = document.createElement("a");
@@ -188,6 +196,21 @@ export default function HomePage() {
             </div>
             {sources.map((source) => (
               <div className="source-card" key={source.id}>
+                <label className="source-select">
+                  <input
+                    aria-label={`Select ${source.title} for export`}
+                    checked={selectedSourceIds.includes(source.id)}
+                    onChange={(event) =>
+                      setSelectedSourceIds((current) =>
+                        event.target.checked
+                          ? [...current, source.id]
+                          : current.filter((id) => id !== source.id)
+                      )
+                    }
+                    type="checkbox"
+                  />
+                  Export
+                </label>
                 <button
                   aria-label={`Open ${source.title}`}
                   onClick={() => setActiveSource(source)}

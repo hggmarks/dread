@@ -19,6 +19,9 @@ export function createLibraryExport(sources: SourceContent[]): Uint8Array {
   };
 
   return zipSync({
+    "README.txt": strToU8(
+      "Focus Reader library export v1\n\nmanifest.json contains the Derived reading sources, Reading state, bookmarks, and metadata. Original source files are stored in each source's originalFile field as base64 data.\n"
+    ),
     "manifest.json": strToU8(JSON.stringify(manifest, null, 2))
   });
 }

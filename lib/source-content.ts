@@ -6,6 +6,11 @@ export type SourceContent = {
   lastPosition: number;
   processingStatus: "ready";
   originalFileName?: string;
+  originalFile?: {
+    fileName: string;
+    mimeType: string;
+    base64: string;
+  };
   pageReferences?: PageReference[];
   bookmarks?: Bookmark[];
   chapters?: Chapter[];
@@ -86,7 +91,7 @@ export function createSource(
   title = "Untitled source",
   metadata: Pick<
     SourceContent,
-    "originalFileName" | "pageReferences" | "bookmarks" | "chapters"
+    "originalFileName" | "originalFile" | "pageReferences" | "bookmarks" | "chapters"
   > = {}
 ): SourceContent {
   return {
