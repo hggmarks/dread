@@ -113,7 +113,8 @@ h1 {
 }
 
 .import-panel,
-.library {
+.library,
+.dialog-panel {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 1.5rem;
@@ -174,6 +175,11 @@ textarea.text-input {
   max-width: 100%;
 }
 
+.error-message {
+  color: #f2a6a6;
+  line-height: 1.5;
+}
+
 .form-actions,
 .library-heading {
   align-items: center;
@@ -181,6 +187,21 @@ textarea.text-input {
   gap: 0.75rem;
   justify-content: flex-end;
   margin-top: 1.5rem;
+}
+
+.library-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.file-import-action {
+  cursor: pointer;
+}
+
+.file-import-action input {
+  display: none;
 }
 
 .secondary-action {
@@ -214,6 +235,15 @@ textarea.text-input {
   color: var(--text);
   margin-top: 1rem;
   padding-top: 1rem;
+  position: relative;
+  width: 100%;
+}
+
+.source-card > button:first-child {
+  background: transparent;
+  border: 0;
+  color: var(--text);
+  padding: 0;
   text-align: left;
   width: 100%;
 }
@@ -228,10 +258,33 @@ textarea.text-input {
   margin: 0;
 }
 
+.source-card small {
+  color: var(--muted);
+  display: block;
+  margin-top: 0.6rem;
+}
+
+.delete-action {
+  background: transparent;
+  border: 0;
+  color: #f2a6a6;
+  padding: 0.5rem 0;
+}
+
 .reader {
   margin: clamp(3rem, 10vh, 7rem) auto 0;
   max-width: 52rem;
   padding: 0 1rem 4rem;
+}
+
+.reader[data-theme="light"] {
+  --background: #f5f7f6;
+  --surface: #ffffff;
+  --surface-raised: #e7efeb;
+  --text: #14211d;
+  --muted: #52635d;
+  --border: rgba(20, 33, 29, 0.16);
+  --accent-ink: #10251f;
 }
 
 .reader-toolbar,
@@ -274,6 +327,68 @@ textarea.text-input {
   white-space: pre-wrap;
 }
 
+.word-button,
+.current-word {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+}
+
+.current-word {
+  background: var(--accent);
+  border-radius: 0.2rem;
+  color: var(--accent-ink);
+}
+
+.navigation-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  display: grid;
+  gap: 1rem;
+  margin: 1.5rem 0;
+  padding: 1rem;
+}
+
+.navigation-panel > label,
+.bookmark-form {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+}
+
+.navigation-panel input[type="range"] {
+  accent-color: var(--accent);
+  flex: 1;
+}
+
+.bookmark-form input,
+.navigation-panel select {
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  color: var(--text);
+  min-width: 0;
+  padding: 0.55rem;
+}
+
+.bookmark-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.bookmark-list button {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text);
+  padding: 0.5rem 0.75rem;
+}
+
 .focus-stage {
   align-items: center;
   display: flex;
@@ -283,6 +398,13 @@ textarea.text-input {
   letter-spacing: -0.06em;
   min-height: 45vh;
   text-align: center;
+  transform: scale(var(--reader-scale, 1));
+}
+
+.focus-stage span {
+  position: absolute;
+  left: var(--reader-anchor, 50%);
+  transform: translateX(-50%);
 }
 
 .reader-controls {
@@ -311,6 +433,32 @@ textarea.text-input {
 
 .reader-controls input {
   accent-color: var(--accent);
+}
+
+.reader-settings {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.reader-settings label {
+  align-items: center;
+  display: flex;
+  gap: 0.4rem;
+}
+
+.reader-settings select {
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  color: var(--text);
+  padding: 0.45rem;
+}
+
+.reader[data-theme="light"] .reader-controls,
+.reader[data-theme="light"] .navigation-panel {
+  background: var(--surface);
 }
 
 @media (max-width: 600px) {
