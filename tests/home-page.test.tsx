@@ -179,4 +179,31 @@ describe("Focus Reader home page", () => {
     await user.click(screen.getByRole("button", { name: "Conventional" }));
     expect(screen.getByRole("button", { name: "One" })).toBeInTheDocument();
   });
+
+  it("detects confident chapter headings and keeps unstructured text continuous", async () => {
+    const user = userEvent.setup();
+    render(<HomePage />);
+
+    await user.click(screen.getByRole("button", { name: "Import source" }));
+    await user.type(
+      screen.getByLabelText("Paste text"),
+      "Chapter 1: Beginning\nOne two.\n\nChapter 2: Middle\nThree four."
+    );
+    await user.click(screen.getByRole("button", { name: "Review source" }));
+    await user.click(screen.getByRole("button", { name: "Save source" }));
+    await user.click(screen.getByRole("button", { name: "Open Untitled source" }));
+
+    expect(screen.getByLabelText("Chapter")).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Chapter 2: Middle" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Back to library" }));
+    await user.click(screen.getByRole("button", { name: "Import source" }));
+    await user.type(screen.getByLabelText("Paste text"), "No heading here.");
+    await user.click(screen.getByRole("button", { name: "Review source" }));
+    await user.click(screen.getByRole("button", { name: "Save source" }));
+    const openButtons = screen.getAllByRole("button", { name: "Open Untitled source" });
+    await user.click(openButtons[0]);
+
+    expect(screen.queryByLabelText("Chapter")).not.toBeInTheDocument();
+  });
 });

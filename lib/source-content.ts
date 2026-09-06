@@ -8,6 +8,13 @@ export type SourceContent = {
   originalFileName?: string;
   pageReferences?: PageReference[];
   bookmarks?: Bookmark[];
+  chapters?: Chapter[];
+};
+
+export type Chapter = {
+  id: string;
+  title: string;
+  wordIndex: number;
 };
 
 export type Bookmark = {
@@ -54,10 +61,33 @@ export function deleteSource(id: string) {
   saveSources(loadSources().filter((source) => source.id !== id));
 }
 
+export function detectChapters(text: string): Chapter[] {
+  let wordIndex = 0;
+  const chapters: Chapter[] = [];
+
+  for (const line of text.split(/\r?\n/)) {
+    const title = line.trim();
+    const words = title ? title.split(/\s+/) : [];
+    if (/^(chapter|part)\s+[\w\d]+(?:\s*[:.-].*)?$/i.test(title)) {
+      chapters.push({
+        id: `chapter-${chapters.length + 1}`,
+        title,
+        wordIndex
+      });
+    }
+    wordIndex += words.length;
+  }
+
+  return chapters;
+}
+
 export function createSource(
   text: string,
   title = "Untitled source",
-  metadata: Pick<SourceContent, "originalFileName" | "pageReferences" | "bookmarks"> = {}
+  metadata: Pick<
+    SourceContent,
+    "originalFileName" | "pageReferences" | "bookmarks" | "chapters"
+  > = {}
 ): SourceContent {
   return {
     id: crypto.randomUUID(),
@@ -66,6 +96,7 @@ export function createSource(
     createdAt: new Date().toISOString(),
     lastPosition: 0,
     processingStatus: "ready",
+    chapters: metadata.chapters ?? detectChapters(text),
     ...metadata
   };
 }

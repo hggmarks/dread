@@ -181,6 +181,31 @@ export function Reader({ source, onBack }: ReaderProps) {
             </select>
           </label>
         )}
+        {source.chapters && source.chapters.length > 0 && (
+          <label htmlFor="chapter">
+            Chapter
+            <select
+              id="chapter"
+              onChange={(event) => {
+                const chapter = source.chapters?.find(
+                  (item) => item.id === event.target.value
+                );
+                if (chapter) jumpTo(chapter.wordIndex);
+              }}
+              value={
+                source.chapters
+                  .filter((chapter) => chapter.wordIndex <= wordIndex)
+                  .at(-1)?.id ?? ""
+              }
+            >
+              {source.chapters.map((chapter) => (
+                <option key={chapter.id} value={chapter.id}>
+                  {chapter.title}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <form
           className="bookmark-form"
           onSubmit={(event) => {
