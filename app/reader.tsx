@@ -70,6 +70,8 @@ export function Reader({ source, onBack }: ReaderProps) {
   const [completed, setCompleted] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const sessionStartedAt = React.useRef(Date.now());
+  const activeStartedAt = React.useRef<number | null>(null);
+  const accumulatedMilliseconds = React.useRef(0);
   const sessionStartWord = React.useRef(wordIndex);
   const pauses = React.useRef(0);
   const promptedMilestone = React.useRef(false);
@@ -80,8 +82,23 @@ export function Reader({ source, onBack }: ReaderProps) {
   const remainingSeconds = Math.round((remainingWords / wordsPerMinute) * 60);
 
   useEffect(() => {
+    if (isPlaying && activeStartedAt.current === null) {
+      activeStartedAt.current = Date.now();
+    } else if (!isPlaying && activeStartedAt.current !== null) {
+      accumulatedMilliseconds.current += Date.now() - activeStartedAt.current;
+      activeStartedAt.current = null;
+    }
+  }, [isPlaying]);
+
+  useEffect(() => {
     const interval = window.setInterval(() => {
-      setElapsedSeconds(Math.floor((Date.now() - sessionStartedAt.current) / 1000));
+      const activeMilliseconds =
+        activeStartedAt.current === null
+          ? 0
+          : Date.now() - activeStartedAt.current;
+      setElapsedSeconds(
+        Math.floor((accumulatedMilliseconds.current + activeMilliseconds) / 1000)
+      );
     }, 1000);
     return () => window.clearInterval(interval);
   }, []);
@@ -184,7 +201,14 @@ export function Reader({ source, onBack }: ReaderProps) {
 
   function finishSession() {
     const endedAt = Date.now();
-    const durationSeconds = Math.max(1, Math.round((endedAt - sessionStartedAt.current) / 1000));
+    const activeMilliseconds =
+      activeStartedAt.current === null
+        ? 0
+        : endedAt - activeStartedAt.current;
+    const durationSeconds = Math.max(
+      1,
+      Math.round((accumulatedMilliseconds.current + activeMilliseconds) / 1000)
+    );
     const wordsRead = Math.max(0, wordIndex - sessionStartWord.current + 1);
     const metric: ReadingSessionMetric = {
       id: crypto.randomUUID(),
@@ -208,6 +232,9 @@ export function Reader({ source, onBack }: ReaderProps) {
     window.localStorage.setItem("focus-reader:sources", JSON.stringify(next));
     setLastSession(metric);
     setIsPlaying(false);
+    accumulatedMilliseconds.current = durationSeconds * 1000;
+    activeStartedAt.current = null;
+    setElapsedSeconds(durationSeconds);
   }
 
   function jumpTo(index: number) {
