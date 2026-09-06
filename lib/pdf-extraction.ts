@@ -5,6 +5,10 @@ export type ExtractedPdf = {
 
 export async function extractPdf(file: File): Promise<ExtractedPdf> {
   const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+  pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+    "pdfjs-dist/legacy/build/pdf.worker.mjs",
+    import.meta.url
+  ).toString();
   const data = new Uint8Array(await file.arrayBuffer());
   const document = await pdfjs.getDocument({ data }).promise;
   const pages: string[] = [];
