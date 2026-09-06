@@ -160,6 +160,26 @@ describe("Focus Reader home page", () => {
     expect(stored[0].pageReferences).toEqual([{ page: 1, startWord: 0, endWord: 2 }]);
   });
 
+  it("explains unsupported and oversized file imports without changing the library", async () => {
+    const user = userEvent.setup();
+    render(<HomePage />);
+    await user.click(screen.getByRole("button", { name: "Import source" }));
+
+    const unsupported = new File(["image"], "cover.png", { type: "image/png" });
+    fireEvent.change(screen.getByLabelText("Choose a text or PDF file"), {
+      target: { files: [unsupported] }
+    });
+    expect(screen.getByRole("alert")).toHaveTextContent("Unsupported format");
+
+    const oversized = new File(["small"], "book.txt", { type: "text/plain" });
+    Object.defineProperty(oversized, "size", { value: 11 * 1024 * 1024 });
+    fireEvent.change(screen.getByLabelText("Choose a text or PDF file"), {
+      target: { files: [oversized] }
+    });
+    expect(screen.getByRole("alert")).toHaveTextContent("10 MB local import limit");
+    expect(window.localStorage.getItem("focus-reader:sources")).toBeNull();
+  });
+
   it("synchronizes word navigation and saves named bookmarks", async () => {
     const user = userEvent.setup();
     render(<HomePage />);
@@ -276,5 +296,20 @@ describe("Focus Reader home page", () => {
       wordsRead: 3,
       pauses: 0
     });
+  });
+
+  it("offers explicit cleanup when local library data is malformed", async () => {
+    window.localStorage.setItem("focus-reader:sources", JSON.stringify({ broken: true }));
+    const user = userEvent.setup();
+    render(<HomePage />);
+
+    expect(
+      await screen.findByRole("heading", { name: "Your local library needs attention" })
+    ).toBeInTheDocument();
+    window.confirm = () => true;
+    await user.click(screen.getByRole("button", { name: "Clear local library" }));
+
+    expect(window.localStorage.getItem("focus-reader:sources")).toBeNull();
+    expect(screen.getByRole("heading", { name: "Your library is ready" })).toBeInTheDocument();
   });
 });

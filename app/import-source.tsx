@@ -84,7 +84,8 @@ export function ImportSource({ onCancel, onSave, onSavePdf }: ImportSourceProps)
       return;
     }
 
-    if (!file.type && !file.name.toLowerCase().endsWith(".txt")) {
+    const isPlainText = file.type === "text/plain" || file.name.toLowerCase().endsWith(".txt");
+    if (!isPlainText) {
       setError("Unsupported format. Choose a plain-text (.txt) or PDF file.");
       return;
     }

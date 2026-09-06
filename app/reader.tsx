@@ -35,6 +35,7 @@ export function Reader({ source, onBack }: ReaderProps) {
   const [assessment, setAssessment] = useState<number | null>(null);
   const [lastSession, setLastSession] = useState<ReadingSessionMetric | null>(null);
   const [milestonePromptVisible, setMilestonePromptVisible] = useState(false);
+  const [storageError, setStorageError] = useState<string | null>(null);
   const sessionStartedAt = React.useRef(Date.now());
   const sessionStartWord = React.useRef(wordIndex);
   const pauses = React.useRef(0);
@@ -42,7 +43,15 @@ export function Reader({ source, onBack }: ReaderProps) {
   const words = useMemo(() => source.text.trim().split(/\s+/).filter(Boolean), [source.text]);
 
   useEffect(() => {
-    updateSourcePosition(source.id, wordIndex);
+    try {
+      updateSourcePosition(source.id, wordIndex);
+    } catch (reason: unknown) {
+      setStorageError(
+        reason instanceof Error
+          ? reason.message
+          : "Reading progress could not be saved locally. Export your library when storage is available."
+      );
+    }
     if (
       sessionPrompts &&
       !promptedMilestone.current &&
@@ -206,6 +215,7 @@ export function Reader({ source, onBack }: ReaderProps) {
       </div>
       <p className="eyebrow">{mode === "focus" ? "Focus Reader" : "Conventional Reader"}</p>
       <h2 id="reader-title">{source.title}</h2>
+      {storageError && <p className="error-message" role="alert">{storageError}</p>}
       {mode === "focus" ? (
         <div className="focus-stage" aria-live="polite" aria-label="Current word">
           <span>{words[wordIndex] ?? ""}</span>

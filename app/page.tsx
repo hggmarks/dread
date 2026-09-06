@@ -6,6 +6,7 @@ import {
   deleteSource,
   loadSources,
   saveSources,
+  clearSources,
   SourceContent
 } from "../lib/source-content";
 import type { PageReference } from "../lib/source-content";
@@ -24,14 +25,19 @@ export default function HomePage() {
     existing: SourceContent;
   } | null>(null);
   const [selectedSourceIds, setSelectedSourceIds] = useState<string[]>([]);
+  const [libraryError, setLibraryError] = useState<string | null>(null);
 
   useEffect(() => {
-    setSources(
-      loadSources().sort(
-        (left, right) =>
-          new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime()
-      )
-    );
+    try {
+      setSources(
+        loadSources().sort(
+          (left, right) =>
+            new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime()
+        )
+      );
+    } catch (reason: unknown) {
+      setLibraryError(reason instanceof Error ? reason.message : "Unable to read the local library.");
+    }
   }, []);
 
   function handleSave(title: string, text: string) {
@@ -104,8 +110,24 @@ export default function HomePage() {
 
   function removeSource(source: SourceContent) {
     if (!window.confirm(`Delete "${source.title}" and all its local reading data?`)) return;
-    deleteSource(source.id);
-    setSources((current) => current.filter((item) => item.id !== source.id));
+    try {
+      deleteSource(source.id);
+      setSources((current) => current.filter((item) => item.id !== source.id));
+    } catch (reason: unknown) {
+      window.alert(reason instanceof Error ? reason.message : "Unable to delete this source locally.");
+    }
+  }
+
+  function clearLibrary() {
+    if (!window.confirm("Clear every source and reading state from this device?")) return;
+    try {
+      clearSources();
+      setSources([]);
+      setSelectedSourceIds([]);
+      setLibraryError(null);
+    } catch (reason: unknown) {
+      window.alert(reason instanceof Error ? reason.message : "Unable to clear the local library.");
+    }
   }
 
   function exportLibrary() {
@@ -130,6 +152,7 @@ export default function HomePage() {
       const nextSources = [...imported, ...sources];
       saveSources(nextSources);
       setSources(nextSources);
+      setLibraryError(null);
     } catch (reason: unknown) {
       window.alert(reason instanceof Error ? reason.message : "Unable to import this library.");
     } finally {
@@ -148,6 +171,24 @@ export default function HomePage() {
         </a>
         <InstallPrompt />
       </header>
+
+      {libraryError && (
+        <section className="dialog-panel" aria-labelledby="library-error-title">
+          <p className="eyebrow">Library recovery</p>
+          <h2 id="library-error-title">Your local library needs attention</h2>
+          <p className="error-message" role="alert">{libraryError}</p>
+          <p>Clear the damaged local state, then restore your sources from a portable library export.</p>
+          <div className="form-actions">
+            <button className="secondary-action" onClick={clearLibrary} type="button">
+              Clear local library
+            </button>
+            <label className="secondary-action file-import-action" htmlFor="library-import-recovery">
+              Import portable export
+              <input accept=".zip,application/zip" id="library-import-recovery" onChange={importLibrary} type="file" />
+            </label>
+          </div>
+        </section>
+      )}
 
       {duplicate ? (
         <section className="dialog-panel" aria-labelledby="duplicate-title">
@@ -192,6 +233,9 @@ export default function HomePage() {
               <div className="library-actions">
                 <button className="secondary-action" onClick={exportLibrary} type="button">
                   Export library
+                </button>
+                <button className="secondary-action" onClick={clearLibrary} type="button">
+                  Clear library
                 </button>
                 <label className="secondary-action file-import-action" htmlFor="library-import">
                   Import library

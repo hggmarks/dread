@@ -64,9 +64,14 @@ export function loadSources(): SourceContent[] {
 
   try {
     const sources = JSON.parse(stored) as unknown;
-    return Array.isArray(sources) ? (sources as SourceContent[]) : [];
+    if (!Array.isArray(sources)) {
+      throw new StorageFailure("The local library is malformed. Export any recoverable data or clear the local library.");
+    }
+    return sources as SourceContent[];
   } catch {
-    return [];
+    throw new StorageFailure(
+      "The local library could not be read. Clear the local library and import a portable export."
+    );
   }
 }
 
@@ -88,6 +93,16 @@ export function updateSourcePosition(id: string, lastPosition: number) {
 
 export function deleteSource(id: string) {
   saveSources(loadSources().filter((source) => source.id !== id));
+}
+
+export function clearSources() {
+  try {
+    window.localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    throw new StorageFailure(
+      "Unable to clear the local library. Review browser storage permissions and try again."
+    );
+  }
 }
 
 export function detectChapters(text: string): Chapter[] {
