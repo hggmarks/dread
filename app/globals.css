@@ -1,13 +1,14 @@
 :root {
   color-scheme: dark;
-  --background: #0c1117;
-  --surface: #131b24;
-  --surface-raised: #18232e;
-  --text: #edf4f8;
-  --muted: #9caeba;
-  --accent: #a9e8d5;
-  --accent-ink: #10251f;
-  --border: rgba(237, 244, 248, 0.12);
+  --background: #1e1e2e;
+  --surface: #181825;
+  --surface-raised: #313244;
+  --text: #cdd6f4;
+  --muted: #9399b2;
+  --subtle: #6c7086;
+  --accent: #a6e3a1;
+  --accent-ink: #1e1e2e;
+  --border: rgba(205, 214, 244, 0.1);
 }
 
 * {
@@ -272,19 +273,10 @@ textarea.text-input {
 }
 
 .reader {
-  margin: clamp(3rem, 10vh, 7rem) auto 0;
-  max-width: 52rem;
-  padding: 0 1rem 4rem;
-}
-
-.reader[data-theme="light"] {
-  --background: #f5f7f6;
-  --surface: #ffffff;
-  --surface-raised: #e7efeb;
-  --text: #14211d;
-  --muted: #52635d;
-  --border: rgba(20, 33, 29, 0.16);
-  --accent-ink: #10251f;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 2.5rem);
+  padding: 0 clamp(1rem, 4vw, 4rem) 2rem;
 }
 
 .reader-toolbar,
@@ -294,30 +286,58 @@ textarea.text-input {
   justify-content: space-between;
 }
 
+.reader-toolbar {
+  border-bottom: 1px solid var(--border);
+  margin: 0 auto;
+  max-width: 72rem;
+  padding: 1rem 0;
+  width: 100%;
+}
+
+.reader-nav-link {
+  background: transparent;
+  border: 0;
+  color: var(--muted);
+  padding: 0.35rem 0;
+}
+
+.reader-nav-link:hover,
+.reader-nav-link:focus-visible {
+  color: var(--text);
+}
+
 .mode-switch {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 999px;
   display: flex;
-  padding: 0.25rem;
+  gap: 1rem;
 }
 
 .mode-switch button {
   background: transparent;
   border: 0;
-  border-radius: 999px;
   color: var(--muted);
-  padding: 0.5rem 0.75rem;
+  padding: 0.35rem 0;
 }
 
 .mode-switch .mode-active {
-  background: var(--surface-raised);
+  border-bottom: 2px solid var(--accent);
   color: var(--text);
 }
 
+.reader-kicker {
+  color: var(--subtle);
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  margin: clamp(2rem, 6vh, 4rem) auto 0;
+  text-transform: uppercase;
+}
+
 .reader > h2 {
-  font-size: clamp(2rem, 5vw, 3.5rem);
-  margin: 0.5rem 0 2rem;
+  color: var(--muted);
+  font-size: 1rem;
+  font-weight: 500;
+  margin: 0.5rem auto 0;
+  max-width: 72rem;
+  text-align: center;
 }
 
 .conventional-text {
@@ -344,13 +364,12 @@ textarea.text-input {
 }
 
 .navigation-panel {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 1rem;
   display: grid;
   gap: 1rem;
-  margin: 1.5rem 0;
-  padding: 1rem;
+  margin: 1rem auto 0;
+  max-width: 72rem;
+  padding: 0;
+  width: 100%;
 }
 
 .navigation-panel > label,
@@ -391,23 +410,57 @@ textarea.text-input {
 
 .focus-stage {
   align-items: center;
-  display: flex;
-  font-size: clamp(3rem, 12vw, 8rem);
+  display: grid;
+  flex: 1;
+  font-size: clamp(2.8rem, 9vw, 7rem);
   font-weight: 700;
-  justify-content: center;
-  letter-spacing: -0.06em;
-  min-height: 45vh;
+  gap: clamp(1rem, 3vw, 3rem);
+  grid-template-columns: minmax(0, 1fr) minmax(8rem, 1.5fr) minmax(0, 1fr);
+  letter-spacing: -0.07em;
+  margin: 0 auto;
+  max-width: 72rem;
+  min-height: min(58vh, 38rem);
   text-align: center;
   transform: scale(var(--reader-scale, 1));
+  width: 100%;
 }
 
-.focus-stage span {
-  position: absolute;
-  left: var(--reader-anchor, 50%);
-  transform: translateX(-50%);
+.focus-word {
+  color: var(--text);
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.focus-word strong {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.context-word {
+  color: var(--subtle);
+  font-size: 0.38em;
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.context-word-previous {
+  text-align: right;
+}
+
+.context-word-next {
+  text-align: left;
 }
 
 .reader-controls {
+  align-items: center;
+  background: rgba(24, 24, 37, 0.92);
+  border-top: 1px solid var(--border);
+  gap: 1rem;
+  margin: auto -1rem 0;
+  padding: 0.75rem 1rem;
   transition: opacity 180ms ease;
 }
 
@@ -416,12 +469,13 @@ textarea.text-input {
   pointer-events: none;
 }
 
-.reader-controls {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 1rem;
-  gap: 1rem;
-  padding: 1rem;
+.secondary-reader-controls {
+  transition: opacity 180ms ease;
+}
+
+.secondary-reader-controls.controls-hidden {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .reader-controls label {
@@ -436,10 +490,25 @@ textarea.text-input {
 }
 
 .reader-settings {
-  align-items: center;
-  display: flex;
-  flex-wrap: wrap;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  bottom: calc(100% + 0.75rem);
+  display: grid;
   gap: 0.75rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 1rem;
+  position: absolute;
+  right: 1rem;
+  width: min(34rem, calc(100vw - 2rem));
+  z-index: 2;
+}
+
+.reader-controls {
+  position: relative;
+}
+
+.reader-settings {
+  align-items: center;
 }
 
 .reader-settings label {
@@ -456,16 +525,91 @@ textarea.text-input {
   padding: 0.45rem;
 }
 
-.reader[data-theme="light"] .reader-controls,
-.reader[data-theme="light"] .navigation-panel {
-  background: var(--surface);
+.shortcut-help {
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  display: grid;
+  gap: 0.25rem;
+  grid-column: 1 / -1;
+  padding-top: 0.75rem;
+}
+
+.shortcut-help strong {
+  color: var(--text);
+}
+
+.shortcut-help small {
+  color: var(--subtle);
+  margin-top: 0.35rem;
+}
+
+.reading-status {
+  align-items: center;
+  color: var(--muted);
+  display: flex;
+  font-size: 0.78rem;
+  gap: 1.5rem;
+  justify-content: center;
+  margin: 0 auto;
+  max-width: 72rem;
+  width: 100%;
+}
+
+.reading-status strong {
+  color: var(--text);
+  font-weight: 600;
 }
 
 @media (max-width: 600px) {
+  .reader {
+    min-height: 100svh;
+    padding-inline: 0.85rem;
+  }
+
+  .reader-toolbar {
+    padding-block: 0.75rem;
+  }
+
+  .reader-kicker,
+  .reader > h2 {
+    display: none;
+  }
+
+  .focus-stage {
+    gap: 0.35rem;
+    grid-template-columns: minmax(0, 0.6fr) minmax(9rem, 1.8fr) minmax(0, 0.6fr);
+    min-height: 62vh;
+  }
+
+  .context-word {
+    font-size: 0.28em;
+  }
+
+  .reading-status {
+    flex-wrap: wrap;
+    gap: 0.35rem 1rem;
+    justify-content: space-between;
+    padding-inline: 0.25rem;
+  }
+
   .reader-toolbar,
   .reader-controls {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .reader-settings {
+    bottom: calc(100% + 0.5rem);
+    grid-template-columns: 1fr;
+    right: 0;
+    width: calc(100vw - 1.7rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reader-controls,
+  .secondary-reader-controls {
+    transition: none;
   }
 }
 

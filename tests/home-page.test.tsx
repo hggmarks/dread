@@ -61,13 +61,13 @@ describe("Focus Reader home page", () => {
     await user.click(screen.getByRole("button", { name: "Save source" }));
     await user.click(screen.getByRole("button", { name: "Open Untitled source" }));
 
-    expect(screen.getByText("Conventional Reader")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "One" })).toBeInTheDocument();
-
-    await user.click(screen.getByRole("button", { name: "Focus Reader" }));
+    expect(screen.getByRole("button", { name: "Focus Reader" })).toBeInTheDocument();
     expect(screen.getByRole("group", { name: "Reading mode" })).toBeInTheDocument();
     expect(screen.getByLabelText("Current word")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Conventional" }));
+    expect(screen.getByText("Conventional Reader")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "One" })).toBeInTheDocument();
   });
 
   it("persists the last word position while reading", async () => {
@@ -214,10 +214,10 @@ describe("Focus Reader home page", () => {
     await user.click(screen.getByRole("button", { name: "Save source" }));
     await user.click(screen.getByRole("button", { name: "Open Untitled source" }));
 
-    expect(screen.getByLabelText("Chapter")).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Chapter" })).toBeInTheDocument();
     expect(screen.getByRole("option", { name: "Chapter 2: Middle" })).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Back to library" }));
+    await user.click(screen.getByRole("button", { name: /Library/ }));
     await user.click(screen.getByRole("button", { name: "Import source" }));
     await user.type(screen.getByLabelText("Paste text"), "No heading here.");
     await user.click(screen.getByRole("button", { name: "Review source" }));
@@ -239,12 +239,27 @@ describe("Focus Reader home page", () => {
     await user.click(screen.getByRole("button", { name: "Focus Reader" }));
 
     expect(screen.getByRole("group", { name: "Reading mode" })).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Light theme" }));
+    await user.click(screen.getByRole("button", { name: "Settings" }));
     await user.selectOptions(screen.getByLabelText("Font"), "serif");
     await user.selectOptions(screen.getByLabelText("Timing"), "boundary-aware");
-    expect(screen.getByRole("button", { name: "Dark theme" })).toBeInTheDocument();
     expect(screen.getByLabelText("Font")).toHaveValue("serif");
     expect(screen.getByLabelText("Timing")).toHaveValue("boundary-aware");
+  });
+
+  it("keeps the active word anchored between subdued context words", async () => {
+    const user = userEvent.setup();
+    render(<HomePage />);
+    await user.click(screen.getByRole("button", { name: "Import source" }));
+    await user.type(screen.getByLabelText("Paste text"), "Before anchored after.");
+    await user.click(screen.getByRole("button", { name: "Review source" }));
+    await user.click(screen.getByRole("button", { name: "Save source" }));
+    await user.click(screen.getByRole("button", { name: "Open Untitled source" }));
+
+    fireEvent.change(screen.getByLabelText("Progress"), { target: { value: "1" } });
+    expect(screen.getByText("Before")).toHaveClass("context-word");
+    expect(screen.getByText("after.")).toHaveClass("context-word");
+    expect(screen.getByLabelText("anchored")).toHaveClass("focus-word");
+    expect(screen.getByText("c")).toHaveClass("anchor-letter");
   });
 
   it("round-trips a versioned portable library package", () => {

@@ -16,8 +16,28 @@ type ReaderProps = {
 type Mode = "conventional" | "focus";
 type TimingProfile = "uniform" | "boundary-aware";
 
+function splitAnchorWord(word: string) {
+  const characters = Array.from(word);
+  const letterIndexes = characters
+    .map((character, index) => (/\p{L}|\p{N}/u.test(character) ? index : -1))
+    .filter((index) => index >= 0);
+  const target = letterIndexes[Math.round((letterIndexes.length - 1) * 0.33)] ?? 0;
+
+  return {
+    before: characters.slice(0, target).join(""),
+    anchor: characters[target] ?? "",
+    after: characters.slice(target + 1).join("")
+  };
+}
+
+function formatDuration(totalSeconds: number) {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = Math.max(0, Math.floor(totalSeconds % 60));
+  return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+}
+
 export function Reader({ source, onBack }: ReaderProps) {
-  const [mode, setMode] = useState<Mode>("conventional");
+  const [mode, setMode] = useState<Mode>("focus");
   const [wordIndex, setWordIndex] = useState(source.lastPosition);
   const [isPlaying, setIsPlaying] = useState(false);
   const [wordsPerMinute, setWordsPerMinute] = useState(300);
@@ -25,7 +45,6 @@ export function Reader({ source, onBack }: ReaderProps) {
   const [controlsVisible, setControlsVisible] = useState(true);
   const [bookmarks, setBookmarks] = useState<Bookmark[]>(source.bookmarks ?? []);
   const [bookmarkLabel, setBookmarkLabel] = useState("");
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [fontFamily, setFontFamily] = useState<"sans" | "serif">("sans");
   const [textScale, setTextScale] = useState(100);
   const [anchorPosition, setAnchorPosition] = useState(50);
@@ -36,11 +55,16 @@ export function Reader({ source, onBack }: ReaderProps) {
   const [lastSession, setLastSession] = useState<ReadingSessionMetric | null>(null);
   const [milestonePromptVisible, setMilestonePromptVisible] = useState(false);
   const [storageError, setStorageError] = useState<string | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const sessionStartedAt = React.useRef(Date.now());
   const sessionStartWord = React.useRef(wordIndex);
   const pauses = React.useRef(0);
   const promptedMilestone = React.useRef(false);
   const words = useMemo(() => source.text.trim().split(/\s+/).filter(Boolean), [source.text]);
+  const activeWord = useMemo(() => splitAnchorWord(words[wordIndex] ?? ""), [words, wordIndex]);
+  const progress = words.length ? Math.round(((wordIndex + 1) / words.length) * 100) : 0;
+  const remainingWords = Math.max(0, words.length - wordIndex - 1);
+  const remainingSeconds = Math.round((remainingWords / wordsPerMinute) * 60);
 
   useEffect(() => {
     try {
@@ -162,30 +186,48 @@ export function Reader({ source, onBack }: ReaderProps) {
     setBookmarkLabel("");
   }
 
+  function handleKeyDown(event: React.KeyboardEvent<HTMLElement>) {
+    setControlsVisible(true);
+    if (event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement) {
+      return;
+    }
+    if (event.key === " ") {
+      event.preventDefault();
+      isPlaying ? pause() : setIsPlaying(true);
+    } else if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      jumpTo(wordIndex - 1);
+    } else if (event.key === "ArrowRight") {
+      event.preventDefault();
+      jumpTo(wordIndex + 1);
+    } else if (event.key === "Escape") {
+      setSettingsOpen(false);
+    }
+  }
+
   return (
     <section
       className="reader"
       aria-labelledby="reader-title"
-      data-theme={theme}
       style={{
         ["--reader-scale" as string]: `${textScale / 100}`,
         ["--reader-anchor" as string]: `${anchorPosition}%`,
         fontFamily: fontFamily === "serif" ? "Georgia, serif" : "Arial, sans-serif"
       }}
-      onKeyDown={() => setControlsVisible(true)}
+      onKeyDown={handleKeyDown}
       onPointerMove={() => setControlsVisible(true)}
       onTouchStart={() => setControlsVisible(true)}
     >
-      <div className="reader-toolbar">
+      <nav className="reader-toolbar" aria-label="Reader navigation">
         <button
-          className="secondary-action"
+          className="reader-nav-link"
           onClick={() => {
             finishSession();
             onBack();
           }}
           type="button"
         >
-          Back to library
+          <span aria-hidden="true">←</span> Library
         </button>
         <div className="mode-switch" role="group" aria-label="Reading mode">
           <button
@@ -205,20 +247,23 @@ export function Reader({ source, onBack }: ReaderProps) {
             Focus Reader
           </button>
         </div>
-        <button
-          className="secondary-action"
-          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          type="button"
-        >
-          {theme === "dark" ? "Light theme" : "Dark theme"}
-        </button>
-      </div>
-      <p className="eyebrow">{mode === "focus" ? "Focus Reader" : "Conventional Reader"}</p>
+      </nav>
+      <p className="reader-kicker">{mode === "focus" ? "Focus Reader" : "Conventional Reader"}</p>
       <h2 id="reader-title">{source.title}</h2>
       {storageError && <p className="error-message" role="alert">{storageError}</p>}
       {mode === "focus" ? (
         <div className="focus-stage" aria-live="polite" aria-label="Current word">
-          <span>{words[wordIndex] ?? ""}</span>
+          <span className="context-word context-word-previous" aria-hidden="true">
+            {words[wordIndex - 1] ?? ""}
+          </span>
+          <span className="focus-word" aria-label={words[wordIndex] ?? ""}>
+            <span>{activeWord.before}</span>
+            <strong className="anchor-letter">{activeWord.anchor}</strong>
+            <span>{activeWord.after}</span>
+          </span>
+          <span className="context-word context-word-next" aria-hidden="true">
+            {words[wordIndex + 1] ?? ""}
+          </span>
         </div>
       ) : (
         <p className="conventional-text">
@@ -235,7 +280,18 @@ export function Reader({ source, onBack }: ReaderProps) {
           ))}
         </p>
       )}
-      <div className="navigation-panel" aria-label="Reading navigation">
+      <div className="reading-status" aria-label="Reading status">
+        <span><strong>{wordsPerMinute}</strong> WPM</span>
+        <span><strong>{progress}%</strong> progress</span>
+        <span><strong>{remainingWords}</strong> words left</span>
+        <span><strong>{formatDuration(remainingSeconds)}</strong> remaining</span>
+      </div>
+      <div
+        className={`navigation-panel secondary-reader-controls ${
+          controlsVisible ? "" : "controls-hidden"
+        }`}
+        aria-label="Reading navigation"
+      >
         {sessionPrompts && milestonePromptVisible && (
           <div className="session-prompt" role="region" aria-label="Reading milestone">
             <strong>How is your understanding so far?</strong>
@@ -369,7 +425,15 @@ export function Reader({ source, onBack }: ReaderProps) {
             <span>words</span>
           </label>
         )}
-        <div className="reader-settings" aria-label="Reader settings">
+        <button
+          className="secondary-action settings-toggle"
+          aria-expanded={settingsOpen}
+          onClick={() => setSettingsOpen((current) => !current)}
+          type="button"
+        >
+          Settings
+        </button>
+        {settingsOpen && <div className="reader-settings" aria-label="Reader settings">
           <label htmlFor="font-family">
             Font
             <select id="font-family" onChange={(event) => setFontFamily(event.target.value as "sans" | "serif")} value={fontFamily}>
@@ -421,7 +485,14 @@ export function Reader({ source, onBack }: ReaderProps) {
               )}
             </>
           )}
-        </div>
+          <div className="shortcut-help">
+            <strong>Shortcuts</strong>
+            <span>Space play/pause</span>
+            <span>← → move one word</span>
+            <span>Esc close settings</span>
+            <small>Focus Reader keeps the active word anchored while the surrounding words stay quiet.</small>
+          </div>
+        </div>}
         <button
           className="primary-action"
           onClick={() => (isPlaying ? pause() : setIsPlaying(true))}

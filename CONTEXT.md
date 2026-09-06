@@ -108,10 +108,34 @@ _Avoid_: Overwrite
 A user-generated package containing the Original source, Derived reading source, Reading state, and Named bookmarks so local data can be recovered or moved.
 _Avoid_: Backup file, sync export
 
+**Original source unavailable**:
+A Source content state in which the Derived reading source remains usable but its retained Original source file is no longer available for recovery or export.
+_Avoid_: Failed source, deleted source
+
 **Storage failure**:
 An inability to save or process local content due to device or browser storage constraints, surfaced without automatically removing existing sources.
 _Avoid_: Cache miss
 
+**Storage management**:
+The user-facing controls for viewing approximate local library usage and reclaiming space by removing retained Original sources without deleting their Derived reading sources or Reading state.
+_Avoid_: Cache settings, cleanup mode
+
 **Word index**:
 The canonical position of a word within a Derived reading source, shared by Focus Reader and Conventional Reader.
 _Avoid_: Screen position
+
+**Visual anchor**:
+The stable recognition point used by Focus Reader to keep the active word visually aligned while words change.
+_Avoid_: Cursor, focus ring
+
+**Anchor letter**:
+The alphabetic character near the optimal recognition point of the active word, highlighted to guide the reader's eyes.
+_Avoid_: Highlighted word, cursor letter
+
+**Reading status**:
+The compact session information shown around Focus Reader, including current WPM, progress, remaining words, and estimated remaining time.
+_Avoid_: Dashboard, playback status
+
+**Control reveal state**:
+Whether secondary Reading session controls are visible during interaction or hidden during active reading.
+_Avoid_: Menu state, toolbar state
