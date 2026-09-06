@@ -9,6 +9,7 @@ import {
   SourceContent
 } from "../lib/source-content";
 import type { PageReference } from "../lib/source-content";
+import { createLibraryExport, parseLibraryExport } from "../lib/library-export";
 import { ImportSource } from "./import-source";
 import { InstallPrompt } from "./install-prompt";
 import { Reader } from "./reader";
@@ -94,6 +95,32 @@ export default function HomePage() {
     setSources((current) => current.filter((item) => item.id !== source.id));
   }
 
+  function exportLibrary() {
+    const bytes = createLibraryExport(sources);
+    const blobBytes = new Uint8Array(bytes);
+    const url = URL.createObjectURL(new Blob([blobBytes], { type: "application/zip" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "focus-reader-library.zip";
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function importLibrary(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      const imported = parseLibraryExport(new Uint8Array(await file.arrayBuffer()));
+      const nextSources = [...imported, ...sources];
+      setSources(nextSources);
+      saveSources(nextSources);
+    } catch (reason: unknown) {
+      window.alert(reason instanceof Error ? reason.message : "Unable to import this library.");
+    } finally {
+      event.target.value = "";
+    }
+  }
+
   return (
     <main className="shell">
       <header className="topbar">
@@ -146,9 +173,18 @@ export default function HomePage() {
           <div className="library" aria-label="Source library">
             <div className="library-heading">
               <h2>Your library</h2>
-              <button className="primary-action" onClick={() => setIsImporting(true)} type="button">
-                Import source
-              </button>
+              <div className="library-actions">
+                <button className="secondary-action" onClick={exportLibrary} type="button">
+                  Export library
+                </button>
+                <label className="secondary-action file-import-action" htmlFor="library-import">
+                  Import library
+                  <input accept=".zip,application/zip" id="library-import" onChange={importLibrary} type="file" />
+                </label>
+                <button className="primary-action" onClick={() => setIsImporting(true)} type="button">
+                  Import source
+                </button>
+              </div>
             </div>
             {sources.map((source) => (
               <div className="source-card" key={source.id}>

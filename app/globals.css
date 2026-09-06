@@ -189,6 +189,21 @@ textarea.text-input {
   margin-top: 1.5rem;
 }
 
+.library-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.file-import-action {
+  cursor: pointer;
+}
+
+.file-import-action input {
+  display: none;
+}
+
 .secondary-action {
   background: transparent;
   border: 1px solid var(--border);

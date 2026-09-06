@@ -3,6 +3,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import HomePage from "../app/page";
+import { createLibraryExport, parseLibraryExport } from "../lib/library-export";
 
 vi.mock("../lib/pdf-extraction", () => ({
   extractPdf: vi.fn().mockResolvedValue({
@@ -224,5 +225,32 @@ describe("Focus Reader home page", () => {
     expect(screen.getByRole("button", { name: "Dark theme" })).toBeInTheDocument();
     expect(screen.getByLabelText("Font")).toHaveValue("serif");
     expect(screen.getByLabelText("Timing")).toHaveValue("boundary-aware");
+  });
+
+  it("round-trips a versioned portable library package", () => {
+    const source = {
+      id: "source-1",
+      title: "Book",
+      text: "One two.",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      lastPosition: 1,
+      processingStatus: "ready" as const,
+      originalFileName: "book.pdf",
+      bookmarks: [{ id: "bookmark-1", label: "Important", wordIndex: 1 }]
+    };
+
+    expect(parseLibraryExport(createLibraryExport([source]))).toEqual([source]);
+  });
+
+  it("offers library export and import actions for a populated library", async () => {
+    const user = userEvent.setup();
+    render(<HomePage />);
+    await user.click(screen.getByRole("button", { name: "Import source" }));
+    await user.type(screen.getByLabelText("Paste text"), "Portable source.");
+    await user.click(screen.getByRole("button", { name: "Review source" }));
+    await user.click(screen.getByRole("button", { name: "Save source" }));
+
+    expect(screen.getByRole("button", { name: "Export library" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Import library")).toBeInTheDocument();
   });
 });
