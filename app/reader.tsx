@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   READER_PREFERENCES_KEY,
   updateSource,
@@ -73,6 +73,11 @@ export function Reader({ source, onBack }: ReaderProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [completed, setCompleted] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [anchorShift, setAnchorShift] = useState(0);
+  const [focusWordWidth, setFocusWordWidth] = useState(0);
+  const focusStageRef = useRef<HTMLDivElement>(null);
+  const focusWordRef = useRef<HTMLSpanElement>(null);
+  const anchorLetterRef = useRef<HTMLElement>(null);
   const sessionStartedAt = React.useRef(Date.now());
   const activeStartedAt = React.useRef<number | null>(null);
   const accumulatedMilliseconds = React.useRef(0);
@@ -84,6 +89,28 @@ export function Reader({ source, onBack }: ReaderProps) {
   const progress = words.length ? Math.round(((wordIndex + 1) / words.length) * 100) : 0;
   const remainingWords = Math.max(0, words.length - wordIndex - 1);
   const remainingSeconds = Math.round((remainingWords / wordsPerMinute) * 60);
+
+  useLayoutEffect(() => {
+    const stage = focusStageRef.current;
+    const word = focusWordRef.current;
+    const anchor = anchorLetterRef.current;
+    if (!stage || !word || !anchor) return;
+
+    const updateAnchorPosition = () => {
+      const anchorCenter = anchor.offsetLeft + anchor.offsetWidth / 2;
+      const scale = textScale / 100;
+      const targetPosition =
+        stage.clientWidth / 2 +
+        (stage.clientWidth * (anchorPosition / 100 - 0.5)) / scale;
+      setAnchorShift(targetPosition - anchorCenter);
+      setFocusWordWidth(word.offsetWidth);
+    };
+    updateAnchorPosition();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(updateAnchorPosition);
+    observer.observe(stage);
+    return () => observer.disconnect();
+  }, [activeWord, anchorPosition, fontFamily, textScale]);
 
   useEffect(() => {
     if (isPlaying && activeStartedAt.current === null) {
@@ -334,13 +361,29 @@ export function Reader({ source, onBack }: ReaderProps) {
       <h2 id="reader-title">{source.title}</h2>
       {storageError && <p className="error-message" role="alert">{storageError}</p>}
       {mode === "focus" ? (
-        <div className="focus-stage" aria-live="polite" aria-label="Current word">
+        <div
+          className="focus-stage"
+          ref={focusStageRef}
+          style={{
+            ["--focus-word-left" as string]: `${anchorShift}px`,
+            ["--focus-word-right" as string]: `${anchorShift + focusWordWidth}px`
+          }}
+          aria-live="polite"
+          aria-label="Current word"
+        >
           <span className="context-word context-word-previous" aria-hidden="true">
             {words[wordIndex - 1] ?? ""}
           </span>
-          <span className="focus-word" aria-label={words[wordIndex] ?? ""}>
+          <span
+            className="focus-word"
+            ref={focusWordRef}
+            style={{ ["--anchor-shift" as string]: `${anchorShift}px` }}
+            aria-label={words[wordIndex] ?? ""}
+          >
             <span>{activeWord.before}</span>
-            <strong className="anchor-letter">{activeWord.anchor}</strong>
+            <strong className="anchor-letter" ref={anchorLetterRef}>
+              {activeWord.anchor}
+            </strong>
             <span>{activeWord.after}</span>
           </span>
           <span className="context-word context-word-next" aria-hidden="true">

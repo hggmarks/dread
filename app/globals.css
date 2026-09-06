@@ -426,7 +426,7 @@ textarea.text-input {
 
 .focus-stage {
   align-items: center;
-  display: grid;
+  display: block;
   flex: 1;
   font-size: clamp(2.8rem, 9vw, 7rem);
   font-weight: 700;
@@ -439,11 +439,15 @@ textarea.text-input {
   text-align: center;
   transform: scale(var(--reader-scale, 1));
   width: 100%;
+  position: relative;
 }
 
 .focus-word {
   color: var(--text);
-  min-width: 0;
+  left: 0;
+  position: absolute;
+  top: 50%;
+  transform: translate(var(--anchor-shift, 0px), -50%);
   white-space: nowrap;
 }
 
@@ -458,15 +462,21 @@ textarea.text-input {
   font-weight: 500;
   letter-spacing: -0.04em;
   overflow: hidden;
+  position: absolute;
+  top: 50%;
   text-overflow: ellipsis;
+  transform: translateY(-50%);
   white-space: nowrap;
+  width: min(30%, 12rem);
 }
 
 .context-word-previous {
+  right: calc(100% - var(--focus-word-left, 0px) + 1rem);
   text-align: right;
 }
 
 .context-word-next {
+  left: calc(var(--focus-word-right, 0px) + 1rem);
   text-align: left;
 }
 
