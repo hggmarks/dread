@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { updateSourcePosition } from "../lib/source-content";
+import { READER_PREFERENCES_KEY, updateSourcePosition } from "../lib/source-content";
 import type {
   Bookmark,
+  ReaderPreferences,
   ReadingSessionMetric,
   SourceContent
 } from "../lib/source-content";
@@ -37,25 +38,37 @@ function formatDuration(totalSeconds: number) {
 }
 
 export function Reader({ source, onBack }: ReaderProps) {
+  const savedPreferences = useMemo(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      return JSON.parse(
+        window.localStorage.getItem(READER_PREFERENCES_KEY) ?? "null"
+      ) as Partial<ReaderPreferences> | null;
+    } catch {
+      return null;
+    }
+  }, []);
   const [mode, setMode] = useState<Mode>("focus");
   const [wordIndex, setWordIndex] = useState(source.lastPosition);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [wordsPerMinute, setWordsPerMinute] = useState(300);
-  const [rewindWords, setRewindWords] = useState(3);
+  const [wordsPerMinute, setWordsPerMinute] = useState(savedPreferences?.wordsPerMinute ?? 300);
+  const [rewindWords, setRewindWords] = useState(savedPreferences?.rewindWords ?? 3);
   const [controlsVisible, setControlsVisible] = useState(true);
   const [bookmarks, setBookmarks] = useState<Bookmark[]>(source.bookmarks ?? []);
   const [bookmarkLabel, setBookmarkLabel] = useState("");
-  const [fontFamily, setFontFamily] = useState<"sans" | "serif">("sans");
-  const [textScale, setTextScale] = useState(100);
-  const [anchorPosition, setAnchorPosition] = useState(50);
-  const [timingProfile, setTimingProfile] = useState<TimingProfile>("uniform");
-  const [sessionPrompts, setSessionPrompts] = useState(true);
-  const [promptMilestone, setPromptMilestone] = useState(50);
+  const [fontFamily, setFontFamily] = useState<"sans" | "serif">(savedPreferences?.fontFamily ?? "sans");
+  const [textScale, setTextScale] = useState(savedPreferences?.textScale ?? 100);
+  const [anchorPosition, setAnchorPosition] = useState(savedPreferences?.anchorPosition ?? 50);
+  const [timingProfile, setTimingProfile] = useState<TimingProfile>(savedPreferences?.timingProfile ?? "uniform");
+  const [sessionPrompts, setSessionPrompts] = useState(savedPreferences?.sessionPrompts ?? true);
+  const [promptMilestone, setPromptMilestone] = useState(savedPreferences?.promptMilestone ?? 50);
   const [assessment, setAssessment] = useState<number | null>(null);
   const [lastSession, setLastSession] = useState<ReadingSessionMetric | null>(null);
   const [milestonePromptVisible, setMilestonePromptVisible] = useState(false);
   const [storageError, setStorageError] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [completed, setCompleted] = useState(false);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const sessionStartedAt = React.useRef(Date.now());
   const sessionStartWord = React.useRef(wordIndex);
   const pauses = React.useRef(0);
@@ -65,6 +78,42 @@ export function Reader({ source, onBack }: ReaderProps) {
   const progress = words.length ? Math.round(((wordIndex + 1) / words.length) * 100) : 0;
   const remainingWords = Math.max(0, words.length - wordIndex - 1);
   const remainingSeconds = Math.round((remainingWords / wordsPerMinute) * 60);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setElapsedSeconds(Math.floor((Date.now() - sessionStartedAt.current) / 1000));
+    }, 1000);
+    return () => window.clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        READER_PREFERENCES_KEY,
+        JSON.stringify({
+          fontFamily,
+          textScale,
+          anchorPosition,
+          timingProfile,
+          sessionPrompts,
+          promptMilestone,
+          wordsPerMinute,
+          rewindWords
+        } satisfies ReaderPreferences)
+      );
+    } catch {
+      setStorageError("Reader preferences could not be saved locally.");
+    }
+  }, [
+    anchorPosition,
+    fontFamily,
+    promptMilestone,
+    rewindWords,
+    sessionPrompts,
+    textScale,
+    timingProfile,
+    wordsPerMinute
+  ]);
 
   useEffect(() => {
     try {
@@ -98,6 +147,7 @@ export function Reader({ source, onBack }: ReaderProps) {
       setWordIndex((current) => {
         if (current >= words.length - 1) {
           setIsPlaying(false);
+          setCompleted(true);
           return current;
         }
         return current + 1;
@@ -162,6 +212,7 @@ export function Reader({ source, onBack }: ReaderProps) {
 
   function jumpTo(index: number) {
     setIsPlaying(false);
+    setCompleted(false);
     setWordIndex(Math.max(0, Math.min(index, words.length - 1)));
     setControlsVisible(true);
   }
@@ -281,11 +332,21 @@ export function Reader({ source, onBack }: ReaderProps) {
         </p>
       )}
       <div className="reading-status" aria-label="Reading status">
+        <span><strong>{formatDuration(elapsedSeconds)}</strong> elapsed</span>
         <span><strong>{wordsPerMinute}</strong> WPM</span>
         <span><strong>{progress}%</strong> progress</span>
         <span><strong>{remainingWords}</strong> words left</span>
         <span><strong>{formatDuration(remainingSeconds)}</strong> remaining</span>
       </div>
+      {completed && (
+        <div className="completion-state" role="status">
+          <strong>Source complete</strong>
+          <span>You reached the final word. Your position is saved.</span>
+          <button className="secondary-action" onClick={finishSession} type="button">
+            Finish session
+          </button>
+        </div>
+      )}
       <div
         className={`navigation-panel secondary-reader-controls ${
           controlsVisible ? "" : "controls-hidden"

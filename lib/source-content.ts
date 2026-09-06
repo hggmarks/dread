@@ -29,6 +29,17 @@ export type ReadingSessionMetric = {
   selfAssessment?: number;
 };
 
+export type ReaderPreferences = {
+  fontFamily: "sans" | "serif";
+  textScale: number;
+  anchorPosition: number;
+  timingProfile: "uniform" | "boundary-aware";
+  sessionPrompts: boolean;
+  promptMilestone: number;
+  wordsPerMinute: number;
+  rewindWords: number;
+};
+
 export type Chapter = {
   id: string;
   title: string;
@@ -48,6 +59,7 @@ export type PageReference = {
 };
 
 const STORAGE_KEY = "focus-reader:sources";
+export const READER_PREFERENCES_KEY = "focus-reader:preferences";
 
 export class StorageFailure extends Error {
   constructor(message = "Unable to save the local library. Export your library or remove unused sources and try again.") {
