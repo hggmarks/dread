@@ -206,4 +206,23 @@ describe("Focus Reader home page", () => {
 
     expect(screen.queryByLabelText("Chapter")).not.toBeInTheDocument();
   });
+
+  it("exposes accessible reader settings and an optional timing profile", async () => {
+    const user = userEvent.setup();
+    render(<HomePage />);
+    await user.click(screen.getByRole("button", { name: "Import source" }));
+    await user.type(screen.getByLabelText("Paste text"), "One two three.");
+    await user.click(screen.getByRole("button", { name: "Review source" }));
+    await user.click(screen.getByRole("button", { name: "Save source" }));
+    await user.click(screen.getByRole("button", { name: "Open Untitled source" }));
+    await user.click(screen.getByRole("button", { name: "Focus Reader" }));
+
+    expect(screen.getByRole("group", { name: "Reading mode" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Light theme" }));
+    await user.selectOptions(screen.getByLabelText("Font"), "serif");
+    await user.selectOptions(screen.getByLabelText("Timing"), "boundary-aware");
+    expect(screen.getByRole("button", { name: "Dark theme" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Font")).toHaveValue("serif");
+    expect(screen.getByLabelText("Timing")).toHaveValue("boundary-aware");
+  });
 });

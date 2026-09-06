@@ -10,6 +10,7 @@ type ReaderProps = {
 };
 
 type Mode = "conventional" | "focus";
+type TimingProfile = "uniform" | "boundary-aware";
 
 export function Reader({ source, onBack }: ReaderProps) {
   const [mode, setMode] = useState<Mode>("conventional");
@@ -20,6 +21,11 @@ export function Reader({ source, onBack }: ReaderProps) {
   const [controlsVisible, setControlsVisible] = useState(true);
   const [bookmarks, setBookmarks] = useState<Bookmark[]>(source.bookmarks ?? []);
   const [bookmarkLabel, setBookmarkLabel] = useState("");
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [fontFamily, setFontFamily] = useState<"sans" | "serif">("sans");
+  const [textScale, setTextScale] = useState(100);
+  const [anchorPosition, setAnchorPosition] = useState(50);
+  const [timingProfile, setTimingProfile] = useState<TimingProfile>("uniform");
   const words = useMemo(() => source.text.trim().split(/\s+/).filter(Boolean), [source.text]);
 
   useEffect(() => {
@@ -29,6 +35,9 @@ export function Reader({ source, onBack }: ReaderProps) {
   useEffect(() => {
     if (!isPlaying || mode !== "focus") return;
 
+    const currentWord = words[wordIndex] ?? "";
+    const boundaryPause =
+      timingProfile === "boundary-aware" && /[.!?,;:]$/.test(currentWord) ? 1.35 : 1;
     const interval = window.setInterval(() => {
       setWordIndex((current) => {
         if (current >= words.length - 1) {
@@ -37,10 +46,10 @@ export function Reader({ source, onBack }: ReaderProps) {
         }
         return current + 1;
       });
-    }, 60000 / wordsPerMinute);
+    }, (60000 / wordsPerMinute) * boundaryPause);
 
     return () => window.clearInterval(interval);
-  }, [isPlaying, mode, words.length, wordsPerMinute]);
+  }, [isPlaying, mode, wordIndex, words, wordsPerMinute, timingProfile]);
 
   useEffect(() => {
     function pauseWhenHidden() {
@@ -96,6 +105,12 @@ export function Reader({ source, onBack }: ReaderProps) {
     <section
       className="reader"
       aria-labelledby="reader-title"
+      data-theme={theme}
+      style={{
+        ["--reader-scale" as string]: `${textScale / 100}`,
+        ["--reader-anchor" as string]: `${anchorPosition}%`,
+        fontFamily: fontFamily === "serif" ? "Georgia, serif" : "Arial, sans-serif"
+      }}
       onKeyDown={() => setControlsVisible(true)}
       onPointerMove={() => setControlsVisible(true)}
       onTouchStart={() => setControlsVisible(true)}
@@ -122,6 +137,13 @@ export function Reader({ source, onBack }: ReaderProps) {
             Focus Reader
           </button>
         </div>
+        <button
+          className="secondary-action"
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          type="button"
+        >
+          {theme === "dark" ? "Light theme" : "Dark theme"}
+        </button>
       </div>
       <p className="eyebrow">{mode === "focus" ? "Focus Reader" : "Conventional Reader"}</p>
       <h2 id="reader-title">{source.title}</h2>
@@ -260,6 +282,35 @@ export function Reader({ source, onBack }: ReaderProps) {
             <span>words</span>
           </label>
         )}
+        <div className="reader-settings" aria-label="Reader settings">
+          <label htmlFor="font-family">
+            Font
+            <select id="font-family" onChange={(event) => setFontFamily(event.target.value as "sans" | "serif")} value={fontFamily}>
+              <option value="sans">Sans serif</option>
+              <option value="serif">Serif</option>
+            </select>
+          </label>
+          <label htmlFor="text-scale">
+            Text size
+            <input id="text-scale" max="160" min="80" onChange={(event) => setTextScale(Number(event.target.value))} type="range" value={textScale} />
+            <span>{textScale}%</span>
+          </label>
+          {mode === "focus" && (
+            <>
+              <label htmlFor="anchor-position">
+                Anchor
+                <input id="anchor-position" max="75" min="25" onChange={(event) => setAnchorPosition(Number(event.target.value))} type="range" value={anchorPosition} />
+              </label>
+              <label htmlFor="timing-profile">
+                Timing
+                <select id="timing-profile" onChange={(event) => setTimingProfile(event.target.value as TimingProfile)} value={timingProfile}>
+                  <option value="uniform">Uniform</option>
+                  <option value="boundary-aware">Boundary-aware</option>
+                </select>
+              </label>
+            </>
+          )}
+        </div>
         <button
           className="primary-action"
           onClick={() => (isPlaying ? pause() : setIsPlaying(true))}
