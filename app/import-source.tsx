@@ -9,25 +9,23 @@ type PdfMetadata = {
   originalFile: {
     fileName: string;
     mimeType: string;
-    base64: string;
+    bytes: Uint8Array;
   };
   pageReferences: PageReference[];
 };
 
 const MAX_IMPORT_BYTES = 100 * 1024 * 1024;
 
-async function encodeOriginalFile(file: File): Promise<string> {
+async function encodeOriginalFile(file: File): Promise<Uint8Array> {
   if (typeof file.arrayBuffer !== "function") {
     const fallbackBytes = new TextEncoder().encode(file.name);
     let fallbackBinary = "";
     for (const byte of fallbackBytes) fallbackBinary += String.fromCharCode(byte);
-    return btoa(fallbackBinary);
+    return fallbackBytes;
   }
   const buffer = await file.arrayBuffer();
   const bytes = new Uint8Array(buffer);
-  let binary = "";
-  for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary);
+  return bytes;
 }
 
 type ImportSourceProps = {
@@ -64,11 +62,11 @@ export function ImportSource({ onCancel, onSave, onSavePdf }: ImportSourceProps)
         extractPdf(file),
         encodeOriginalFile(file)
       ])
-        .then(([result, base64]) => {
+        .then(([result, bytes]) => {
           setText(result.text);
           setPdfMetadata({
             originalFileName: file.name,
-            originalFile: { fileName: file.name, mimeType: file.type, base64 },
+            originalFile: { fileName: file.name, mimeType: file.type, bytes },
             pageReferences: result.pageReferences
           });
         })

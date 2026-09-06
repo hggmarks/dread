@@ -265,6 +265,22 @@ textarea.text-input {
   margin-top: 0.6rem;
 }
 
+.storage-management {
+  color: var(--muted);
+  display: grid;
+  gap: 0.35rem;
+  margin-bottom: 1.5rem;
+}
+
+.storage-management strong {
+  color: var(--text);
+}
+
+.storage-management small,
+.storage-warning {
+  color: var(--subtle);
+}
+
 .delete-action {
   background: transparent;
   border: 0;

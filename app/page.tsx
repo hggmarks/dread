@@ -7,6 +7,8 @@ import {
   loadSources,
   saveSources,
   clearSources,
+  estimateStorage,
+  removeOriginalSource,
   SourceContent
 } from "../lib/source-content";
 import type { PageReference } from "../lib/source-content";
@@ -14,6 +16,11 @@ import { createLibraryExport, parseLibraryExport } from "../lib/library-export";
 import { ImportSource } from "./import-source";
 import { InstallPrompt } from "./install-prompt";
 import { Reader } from "./reader";
+
+function formatBytes(bytes: number) {
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 export default function HomePage() {
   const [sources, setSources] = useState<SourceContent[]>([]);
@@ -26,6 +33,7 @@ export default function HomePage() {
   } | null>(null);
   const [selectedSourceIds, setSelectedSourceIds] = useState<string[]>([]);
   const [libraryError, setLibraryError] = useState<string | null>(null);
+  const [storageEstimate, setStorageEstimate] = useState<StorageEstimate | null>(null);
 
   useEffect(() => {
     void loadSources()
@@ -41,6 +49,10 @@ export default function HomePage() {
         setLibraryError(reason instanceof Error ? reason.message : "Unable to read the local library.");
       });
   }, []);
+
+  useEffect(() => {
+    void estimateStorage().then(setStorageEstimate);
+  }, [sources]);
 
   function handleSave(title: string, text: string) {
     const existing = sources.find((source) => source.title === title && source.text === text);
@@ -129,6 +141,22 @@ export default function HomePage() {
       setLibraryError(null);
     } catch (reason: unknown) {
       window.alert(reason instanceof Error ? reason.message : "Unable to clear the local library.");
+    }
+
+  }
+
+  async function removeOriginal(source: SourceContent) {
+    try {
+      await removeOriginalSource(source.id);
+      setSources((current) =>
+        current.map((item) =>
+          item.id === source.id
+            ? { ...item, originalFile: undefined, originalSourceUnavailable: true }
+            : item
+        )
+      );
+    } catch (reason: unknown) {
+      window.alert(reason instanceof Error ? reason.message : "Unable to remove the original source.");
     }
   }
 
@@ -230,6 +258,16 @@ export default function HomePage() {
           />
         ) : sources.length > 0 ? (
           <div className="library" aria-label="Source library">
+            {storageEstimate && (
+              <aside className="storage-management" aria-label="Storage management">
+                <strong>Storage management</strong>
+                <span>
+                  Approximately {formatBytes(storageEstimate.usage ?? 0)} of{" "}
+                  {formatBytes(storageEstimate.quota ?? 0)} used.
+                </span>
+                <small>Remove retained PDF files to keep their extracted reading source and progress.</small>
+              </aside>
+            )}
             <div className="library-heading">
               <h2>Your library</h2>
               <div className="library-actions">
@@ -276,6 +314,18 @@ export default function HomePage() {
                     Ready · {Math.min(100, Math.round((source.lastPosition / Math.max(1, source.text.trim().split(/\s+/).length)) * 100))}% read
                   </small>
                 </button>
+                {source.originalFile && (
+                  <button
+                    className="delete-action"
+                    onClick={() => removeOriginal(source)}
+                    type="button"
+                  >
+                    Remove original file
+                  </button>
+                )}
+                {source.originalSourceUnavailable && (
+                  <small className="storage-warning">Original source unavailable</small>
+                )}
                 <button
                   aria-label={`Delete ${source.title}`}
                   className="delete-action"

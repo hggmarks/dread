@@ -275,7 +275,16 @@ describe("Focus Reader home page", () => {
       bookmarks: [{ id: "bookmark-1", label: "Important", wordIndex: 1 }]
     };
 
-    expect(parseLibraryExport(createLibraryExport([source]))).toEqual([source]);
+    expect(parseLibraryExport(createLibraryExport([source]))).toEqual([
+      {
+        ...source,
+        originalFile: {
+          fileName: "book.pdf",
+          mimeType: "application/pdf",
+          bytes: new Uint8Array([1, 2])
+        }
+      }
+    ]);
   });
 
   it("offers library export and import actions for a populated library", async () => {

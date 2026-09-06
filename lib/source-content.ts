@@ -9,8 +9,10 @@ export type SourceContent = {
   originalFile?: {
     fileName: string;
     mimeType: string;
-    base64: string;
+    base64?: string;
+    bytes?: Uint8Array;
   };
+  originalSourceUnavailable?: boolean;
   pageReferences?: PageReference[];
   bookmarks?: Bookmark[];
   chapters?: Chapter[];
@@ -212,6 +214,7 @@ export function clearSources(): Promise<void> {
             "Unable to clear the local library. Review browser storage permissions and try again."
           );
         }
+
       }
 
       try {
@@ -223,6 +226,19 @@ export function clearSources(): Promise<void> {
       }
     });
   return sourceMutationQueue;
+}
+
+export async function estimateStorage(): Promise<StorageEstimate | null> {
+  if (typeof navigator === "undefined" || !navigator.storage?.estimate) return null;
+  return navigator.storage.estimate();
+}
+
+export function removeOriginalSource(id: string): Promise<void> {
+  return updateSource(id, (source) => ({
+    ...source,
+    originalFile: undefined,
+    originalSourceUnavailable: true
+  }));
 }
 
 export function detectChapters(text: string): Chapter[] {
