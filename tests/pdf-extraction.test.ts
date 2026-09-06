@@ -32,6 +32,6 @@ describe("PDF extraction", () => {
 
     expect(getDocument).toHaveBeenCalled();
     const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
-    expect(pdfjs.GlobalWorkerOptions.workerSrc).toContain("pdf.worker.mjs");
+    expect(pdfjs.GlobalWorkerOptions.workerSrc).toBe("/pdf.worker.mjs");
   });
 });
