@@ -172,11 +172,11 @@ describe("Focus Reader home page", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("Unsupported format");
 
     const oversized = new File(["small"], "book.txt", { type: "text/plain" });
-    Object.defineProperty(oversized, "size", { value: 11 * 1024 * 1024 });
+    Object.defineProperty(oversized, "size", { value: 101 * 1024 * 1024 });
     fireEvent.change(screen.getByLabelText("Choose a text or PDF file"), {
       target: { files: [oversized] }
     });
-    expect(screen.getByRole("alert")).toHaveTextContent("10 MB local import limit");
+    expect(screen.getByRole("alert")).toHaveTextContent("100 MB local import limit");
     expect(window.localStorage.getItem("focus-reader:sources")).toBeNull();
   });
 

@@ -14,7 +14,7 @@ type PdfMetadata = {
   pageReferences: PageReference[];
 };
 
-const MAX_IMPORT_BYTES = 10 * 1024 * 1024;
+const MAX_IMPORT_BYTES = 100 * 1024 * 1024;
 
 async function encodeOriginalFile(file: File): Promise<string> {
   if (typeof file.arrayBuffer !== "function") {
@@ -55,7 +55,7 @@ export function ImportSource({ onCancel, onSave, onSavePdf }: ImportSourceProps)
     setTitle(file.name.replace(/\.[^.]+$/, ""));
     setError(null);
     if (file.size > MAX_IMPORT_BYTES) {
-      setError("This source is larger than the 10 MB local import limit.");
+      setError("This source is larger than the 100 MB local import limit.");
       return;
     }
     if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {

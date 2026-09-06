@@ -1,7 +1,11 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { READER_PREFERENCES_KEY, updateSourcePosition } from "../lib/source-content";
+import {
+  READER_PREFERENCES_KEY,
+  updateSource,
+  updateSourcePosition
+} from "../lib/source-content";
 import type {
   Bookmark,
   ReaderPreferences,
@@ -133,15 +137,13 @@ export function Reader({ source, onBack }: ReaderProps) {
   ]);
 
   useEffect(() => {
-    try {
-      updateSourcePosition(source.id, wordIndex);
-    } catch (reason: unknown) {
+    void updateSourcePosition(source.id, wordIndex).catch((reason: unknown) => {
       setStorageError(
         reason instanceof Error
           ? reason.message
           : "Reading progress could not be saved locally. Export your library when storage is available."
       );
-    }
+    });
     if (
       sessionPrompts &&
       !promptedMilestone.current &&
@@ -199,7 +201,7 @@ export function Reader({ source, onBack }: ReaderProps) {
     setControlsVisible(true);
   }
 
-  function finishSession() {
+  async function finishSession() {
     const endedAt = Date.now();
     const activeMilliseconds =
       activeStartedAt.current === null
@@ -221,20 +223,21 @@ export function Reader({ source, onBack }: ReaderProps) {
       completion: words.length ? Math.round(((wordIndex + 1) / words.length) * 100) : 0,
       ...(assessment === null ? {} : { selfAssessment: assessment })
     };
-    const stored = JSON.parse(
-      window.localStorage.getItem("focus-reader:sources") ?? "[]"
-    ) as SourceContent[];
-    const next = stored.map((item) =>
-      item.id === source.id
-        ? { ...item, sessionMetrics: [...(item.sessionMetrics ?? []), metric] }
-        : item
-    );
-    window.localStorage.setItem("focus-reader:sources", JSON.stringify(next));
-    setLastSession(metric);
-    setIsPlaying(false);
-    accumulatedMilliseconds.current = durationSeconds * 1000;
-    activeStartedAt.current = null;
-    setElapsedSeconds(durationSeconds);
+    try {
+      await updateSource(source.id, (item) => ({
+        ...item,
+        sessionMetrics: [...(item.sessionMetrics ?? []), metric]
+      }));
+      setLastSession(metric);
+      setIsPlaying(false);
+      accumulatedMilliseconds.current = durationSeconds * 1000;
+      activeStartedAt.current = null;
+      setElapsedSeconds(durationSeconds);
+    } catch (reason: unknown) {
+      setStorageError(
+        reason instanceof Error ? reason.message : "The session could not be saved locally."
+      );
+    }
   }
 
   function jumpTo(index: number) {
@@ -244,7 +247,7 @@ export function Reader({ source, onBack }: ReaderProps) {
     setControlsVisible(true);
   }
 
-  function addBookmark() {
+  async function addBookmark() {
     const label = bookmarkLabel.trim();
     if (!label) return;
     const nextBookmarks = [
@@ -252,16 +255,17 @@ export function Reader({ source, onBack }: ReaderProps) {
       { id: crypto.randomUUID(), label, wordIndex }
     ];
     setBookmarks(nextBookmarks);
-    window.localStorage.setItem(
-      "focus-reader:sources",
-      JSON.stringify(
-        JSON.parse(window.localStorage.getItem("focus-reader:sources") ?? "[]").map(
-          (item: SourceContent) =>
-            item.id === source.id ? { ...item, bookmarks: nextBookmarks } : item
-        )
-      )
-    );
-    setBookmarkLabel("");
+    try {
+      await updateSource(source.id, (item) => ({
+        ...item,
+        bookmarks: nextBookmarks
+      }));
+      setBookmarkLabel("");
+    } catch (reason: unknown) {
+      setStorageError(
+        reason instanceof Error ? reason.message : "The bookmark could not be saved locally."
+      );
+    }
   }
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLElement>) {

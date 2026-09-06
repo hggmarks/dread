@@ -28,16 +28,18 @@ export default function HomePage() {
   const [libraryError, setLibraryError] = useState<string | null>(null);
 
   useEffect(() => {
-    try {
-      setSources(
-        loadSources().sort(
-          (left, right) =>
-            new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime()
-        )
-      );
-    } catch (reason: unknown) {
-      setLibraryError(reason instanceof Error ? reason.message : "Unable to read the local library.");
-    }
+    void loadSources()
+      .then((loadedSources) => {
+        setSources(
+          loadedSources.sort(
+            (left, right) =>
+              new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime()
+          )
+        );
+      })
+      .catch((reason: unknown) => {
+        setLibraryError(reason instanceof Error ? reason.message : "Unable to read the local library.");
+      });
   }, []);
 
   function handleSave(title: string, text: string) {
@@ -48,13 +50,13 @@ export default function HomePage() {
       return;
     }
 
-    addSource(createSource(text, title));
+    void addSource(createSource(text, title));
   }
 
-  function addSource(source: SourceContent) {
+  async function addSource(source: SourceContent) {
     const nextSources = [source, ...sources];
     try {
-      saveSources(nextSources);
+      await saveSources(nextSources);
       setSources(nextSources);
       setIsImporting(false);
     } catch (reason: unknown) {
@@ -77,10 +79,10 @@ export default function HomePage() {
       setIsImporting(false);
       return;
     }
-    addSource(createSource(text, title, metadata));
+    void addSource(createSource(text, title, metadata));
   }
 
-  function replaceDuplicate() {
+  async function replaceDuplicate() {
     if (!duplicate) return;
     const replacement = {
       ...duplicate.existing,
@@ -94,7 +96,7 @@ export default function HomePage() {
       ...sources.filter((source) => source.id !== duplicate.existing.id)
     ];
     try {
-      saveSources(nextSources);
+      await saveSources(nextSources);
       setSources(nextSources);
       setDuplicate(null);
     } catch (reason: unknown) {
@@ -104,24 +106,24 @@ export default function HomePage() {
 
   function copyDuplicate() {
     if (!duplicate) return;
-    addSource(createSource(duplicate.text, duplicate.title));
+    void addSource(createSource(duplicate.text, duplicate.title));
     setDuplicate(null);
   }
 
-  function removeSource(source: SourceContent) {
+  async function removeSource(source: SourceContent) {
     if (!window.confirm(`Delete "${source.title}" and all its local reading data?`)) return;
     try {
-      deleteSource(source.id);
+      await deleteSource(source.id);
       setSources((current) => current.filter((item) => item.id !== source.id));
     } catch (reason: unknown) {
       window.alert(reason instanceof Error ? reason.message : "Unable to delete this source locally.");
     }
   }
 
-  function clearLibrary() {
+  async function clearLibrary() {
     if (!window.confirm("Clear every source and reading state from this device?")) return;
     try {
-      clearSources();
+      await clearSources();
       setSources([]);
       setSelectedSourceIds([]);
       setLibraryError(null);
@@ -150,7 +152,7 @@ export default function HomePage() {
     try {
       const imported = parseLibraryExport(new Uint8Array(await file.arrayBuffer()));
       const nextSources = [...imported, ...sources];
-      saveSources(nextSources);
+      await saveSources(nextSources);
       setSources(nextSources);
       setLibraryError(null);
     } catch (reason: unknown) {
