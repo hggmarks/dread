@@ -1,0 +1,65 @@
+.navigation-panel input.progress-range {
+  appearance: none;
+  background: var(--surface-raised);
+  border-radius: 999px;
+  height: 0.2rem;
+  outline: none;
+}
+
+.navigation-panel input.progress-range::-webkit-slider-runnable-track {
+  background: linear-gradient(
+    to right,
+    var(--accent) 0 var(--progress, 0%),
+    var(--surface-raised) var(--progress, 0%) 100%
+  );
+  border-radius: inherit;
+  height: 0.2rem;
+}
+
+.navigation-panel input.progress-range::-moz-range-track {
+  background: var(--surface-raised);
+  border-radius: inherit;
+  height: 0.2rem;
+}
+
+.navigation-panel input.progress-range::-moz-range-progress {
+  background: var(--accent);
+  border-radius: inherit;
+  height: 0.2rem;
+}
+
+.navigation-panel input.progress-range::-webkit-slider-thumb {
+  appearance: none;
+  background: var(--accent);
+  border: 0;
+  border-radius: 0.1rem;
+  height: 0.8rem;
+  margin-top: -0.3rem;
+  width: 0.35rem;
+  opacity: 0;
+  pointer-events: auto;
+}
+
+.navigation-panel input.progress-range::-moz-range-thumb {
+  background: var(--accent);
+  border: 0;
+  border-radius: 0.1rem;
+  height: 0.8rem;
+  width: 0.35rem;
+  opacity: 0;
+  pointer-events: auto;
+}
+
+.navigation-panel input.progress-range:focus-visible {
+  box-shadow: 0 0 0 0.2rem rgba(166, 227, 161, 0.25);
+}
+
+.reader-controls input {
+  background: var(--background);  
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  color: var(--text);
+  width: 100px;
+  padding: 0.55rem;
+  text-align: center;
+}

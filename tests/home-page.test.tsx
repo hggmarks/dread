@@ -242,8 +242,13 @@ describe("Focus Reader home page", () => {
     await user.click(screen.getByRole("button", { name: "Settings" }));
     await user.selectOptions(screen.getByLabelText("Font"), "serif");
     await user.selectOptions(screen.getByLabelText("Timing"), "boundary-aware");
+    const textSize = screen.getByRole("combobox", { name: "Text size" });
+    expect(textSize).toHaveValue("100");
+    expect(textSize.querySelectorAll("option")).toHaveLength(6);
+    await user.selectOptions(textSize, "70");
     expect(screen.getByLabelText("Font")).toHaveValue("serif");
     expect(screen.getByLabelText("Timing")).toHaveValue("boundary-aware");
+    expect(textSize).toHaveValue("70");
   });
 
   it("keeps the active word anchored between subdued context words", async () => {
@@ -260,6 +265,21 @@ describe("Focus Reader home page", () => {
     expect(screen.getByText("after.")).toHaveClass("context-word");
     expect(screen.getByLabelText("anchored")).toHaveClass("focus-word");
     expect(screen.getByText("c")).toHaveClass("anchor-letter");
+  });
+
+  it("uses the required anchor letter for two- and three-letter words", async () => {
+    const user = userEvent.setup();
+    render(<HomePage />);
+    await user.click(screen.getByRole("button", { name: "Import source" }));
+    await user.type(screen.getByLabelText("Paste text"), "aa bb ccc");
+    await user.click(screen.getByRole("button", { name: "Review source" }));
+    await user.click(screen.getByRole("button", { name: "Save source" }));
+    await user.click(screen.getByRole("button", { name: "Open Untitled source" }));
+
+    fireEvent.change(screen.getByLabelText("Progress"), { target: { value: "1" } });
+    expect(screen.getByText("b", { selector: "strong" })).toHaveClass("anchor-letter");
+    fireEvent.change(screen.getByLabelText("Progress"), { target: { value: "2" } });
+    expect(screen.getByText("c", { selector: "strong" })).toHaveClass("anchor-letter");
   });
 
   it("round-trips a versioned portable library package", () => {

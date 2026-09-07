@@ -3,12 +3,14 @@
   --background: #1e1e2e;
   --surface: #181825;
   --surface-raised: #313244;
-  --text: #cdd6f4;
+  --text: #6c7086;
   --muted: #9399b2;
-  --subtle: #6c7086;
+  --subtle: #2e303d;
   --accent: #a6e3a1;
+  --anchor: #ff3030;
   --accent-ink: #1e1e2e;
   --border: rgba(205, 214, 244, 0.1);
+  --bars: #6c7086;
 }
 
 * {
@@ -400,6 +402,7 @@ textarea.text-input {
   flex: 1;
 }
 
+.reader-input,
 .bookmark-form input,
 .navigation-panel select {
   background: var(--background);
@@ -408,6 +411,24 @@ textarea.text-input {
   color: var(--text);
   min-width: 0;
   padding: 0.55rem;
+}
+
+.reader-input {
+  color: var(--text);
+  font: inherit;
+  width: 5rem;
+}
+
+.reader-input[type="number"] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.reader-input[type="number"]::-webkit-inner-spin-button,
+.reader-input[type="number"]::-webkit-outer-spin-button {
+  appearance: none;
+  margin: 0;
+  -webkit-appearance: none;
 }
 
 .bookmark-list {
@@ -429,6 +450,7 @@ textarea.text-input {
   display: block;
   flex: 1;
   font-size: clamp(2.8rem, 9vw, 7rem);
+  font-family: Consolas, "Lucida Console", Monaco, monospace;
   font-weight: 700;
   gap: clamp(1rem, 3vw, 3rem);
   grid-template-columns: minmax(0, 1fr) minmax(8rem, 1.5fr) minmax(0, 1fr);
@@ -442,6 +464,37 @@ textarea.text-input {
   position: relative;
 }
 
+/* Customize the Focus Reader anchor markers here. */
+.focus-stage::before {
+  background:
+    linear-gradient(var(--bars), var(--bars)) center / 2px 100% no-repeat,
+    linear-gradient(var(--bars), var(--bars)) center top / 100% 2px no-repeat;
+  content: "";
+  height: 0.3em;
+  left: var(--reader-anchor, 55%);
+  opacity: 0.55;
+  pointer-events: none;
+  position: absolute;
+  top: 30%;
+  transform: translate(-50%, -100%);
+  width: 100%;
+}
+
+.focus-stage::after {
+  background:
+    linear-gradient(var(--bars), var(--bars)) center / 2px 100% no-repeat,
+    linear-gradient(var(--bars), var(--bars)) center bottom / 100% 2px no-repeat;
+  content: "";
+  height: 0.3em;
+  left: var(--reader-anchor, 55%);
+  opacity: 0.55;
+  pointer-events: none;
+  position: absolute;
+  top: 70%;
+  transform: translate(-50%, 0);
+  width: 100%;
+}
+
 .focus-word {
   color: var(--text);
   left: 0;
@@ -452,7 +505,7 @@ textarea.text-input {
 }
 
 .focus-word strong {
-  color: var(--accent);
+  color: var(--anchor);
   font-weight: 700;
 }
 

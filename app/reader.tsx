@@ -18,15 +18,30 @@ type ReaderProps = {
   onBack: () => void;
 };
 
-type Mode = "conventional" | "focus";
+type Mode = "focus" | "conventional";
 type TimingProfile = "uniform" | "boundary-aware";
+
+function clampNumber(value: number, minimum: number, maximum?: number) {
+  const minimumValue = Math.max(minimum, value);
+  return maximum === undefined ? minimumValue : Math.min(maximum, minimumValue);
+}
+
+function normalizeTextScale(value: number) {
+  return clampNumber(Math.round(value / 10) * 10, 50, 100);
+}
 
 function splitAnchorWord(word: string) {
   const characters = Array.from(word);
   const letterIndexes = characters
     .map((character, index) => (/\p{L}|\p{N}/u.test(character) ? index : -1))
     .filter((index) => index >= 0);
-  const target = letterIndexes[Math.round((letterIndexes.length - 1) * 0.33)] ?? 0;
+  const targetOffset =
+    letterIndexes.length === 2
+      ? 1
+      : letterIndexes.length === 3
+        ? 1
+        : Math.round((letterIndexes.length - 1) * 0.33);
+  const target = letterIndexes[targetOffset] ?? 0;
 
   return {
     before: characters.slice(0, target).join(""),
@@ -55,14 +70,22 @@ export function Reader({ source, onBack }: ReaderProps) {
   const [mode, setMode] = useState<Mode>("focus");
   const [wordIndex, setWordIndex] = useState(source.lastPosition);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [wordsPerMinute, setWordsPerMinute] = useState(savedPreferences?.wordsPerMinute ?? 300);
-  const [rewindWords, setRewindWords] = useState(savedPreferences?.rewindWords ?? 3);
+  const [wordsPerMinute, setWordsPerMinute] = useState(
+    clampNumber(savedPreferences?.wordsPerMinute ?? 300, 1)
+  );
+  const [rewindWords, setRewindWords] = useState(
+    clampNumber(savedPreferences?.rewindWords ?? 3, 0, 10)
+  );
   const [controlsVisible, setControlsVisible] = useState(true);
   const [bookmarks, setBookmarks] = useState<Bookmark[]>(source.bookmarks ?? []);
   const [bookmarkLabel, setBookmarkLabel] = useState("");
   const [fontFamily, setFontFamily] = useState<"sans" | "serif">(savedPreferences?.fontFamily ?? "sans");
-  const [textScale, setTextScale] = useState(savedPreferences?.textScale ?? 100);
-  const [anchorPosition, setAnchorPosition] = useState(savedPreferences?.anchorPosition ?? 50);
+  const [textScale, setTextScale] = useState(
+    normalizeTextScale(savedPreferences?.textScale ?? 100)
+  );
+  const [anchorPosition, setAnchorPosition] = useState(
+    clampNumber(savedPreferences?.anchorPosition ?? 50, 25, 75)
+  );
   const [timingProfile, setTimingProfile] = useState<TimingProfile>(savedPreferences?.timingProfile ?? "uniform");
   const [sessionPrompts, setSessionPrompts] = useState(savedPreferences?.sessionPrompts ?? true);
   const [promptMilestone, setPromptMilestone] = useState(savedPreferences?.promptMilestone ?? 50);
@@ -98,10 +121,7 @@ export function Reader({ source, onBack }: ReaderProps) {
 
     const updateAnchorPosition = () => {
       const anchorCenter = anchor.offsetLeft + anchor.offsetWidth / 2;
-      const scale = textScale / 100;
-      const targetPosition =
-        stage.clientWidth / 2 +
-        (stage.clientWidth * (anchorPosition / 100 - 0.5)) / scale;
+      const targetPosition = stage.clientWidth * (anchorPosition / 100);
       setAnchorShift(targetPosition - anchorCenter);
       setFocusWordWidth(word.offsetWidth);
     };
@@ -340,20 +360,20 @@ export function Reader({ source, onBack }: ReaderProps) {
         </button>
         <div className="mode-switch" role="group" aria-label="Reading mode">
           <button
-            aria-pressed={mode === "conventional"}
-            className={mode === "conventional" ? "mode-active" : ""}
-            onClick={() => setMode("conventional")}
-            type="button"
-          >
-            Conventional
-          </button>
-          <button
             aria-pressed={mode === "focus"}
             className={mode === "focus" ? "mode-active" : ""}
             onClick={() => setMode("focus")}
             type="button"
           >
             Focus Reader
+          </button>
+          <button
+            aria-pressed={mode === "conventional"}
+            className={mode === "conventional" ? "mode-active" : ""}
+            onClick={() => setMode("conventional")}
+            type="button"
+          >
+            Conventional
           </button>
         </div>
       </nav>
@@ -446,13 +466,16 @@ export function Reader({ source, onBack }: ReaderProps) {
           </div>
         )}
         <label htmlFor="progress">
-          Progress
           <input
             aria-label="Progress"
+            className="progress-range"
             id="progress"
             max={Math.max(0, words.length - 1)}
             min="0"
             onChange={(event) => jumpTo(Number(event.target.value))}
+            style={{
+              ["--progress" as string]: `${words.length > 1 ? (wordIndex / (words.length - 1)) * 100 : 0}%`
+            }}
             type="range"
             value={wordIndex}
           />
@@ -515,6 +538,7 @@ export function Reader({ source, onBack }: ReaderProps) {
         >
           <label htmlFor="bookmark-label">Bookmark</label>
           <input
+            className="reader-input"
             id="bookmark-label"
             onChange={(event) => setBookmarkLabel(event.target.value)}
             placeholder="Name this position"
@@ -536,24 +560,32 @@ export function Reader({ source, onBack }: ReaderProps) {
         <label htmlFor="reading-speed">
           Speed
           <input
+            className="reader-input"
             id="reading-speed"
-            max="1000"
-            min="60"
-            onChange={(event) => setWordsPerMinute(Number(event.target.value))}
-            step="10"
-            type="range"
+            aria-label="Words per minute"
+            min="0"
+            onChange={(event) => {
+              const value = Number(event.target.value);
+              if (Number.isFinite(value)) setWordsPerMinute(clampNumber(value, 1));
+            }}
+            step="1"
+            type="number"
             value={wordsPerMinute}
           />
-          <span>{wordsPerMinute} WPM</span>
+          <span>WPM</span>
         </label>
         {mode === "focus" && (
           <label htmlFor="rewind-words">
             Pause rewind
             <input
+              className="reader-input"
               id="rewind-words"
               max="10"
               min="0"
-              onChange={(event) => setRewindWords(Number(event.target.value))}
+              onChange={(event) => {
+                const value = Number(event.target.value);
+                if (Number.isFinite(value)) setRewindWords(clampNumber(value, 0, 10));
+              }}
               type="number"
               value={rewindWords}
             />
@@ -578,14 +610,36 @@ export function Reader({ source, onBack }: ReaderProps) {
           </label>
           <label htmlFor="text-scale">
             Text size
-            <input id="text-scale" max="160" min="80" onChange={(event) => setTextScale(Number(event.target.value))} type="range" value={textScale} />
-            <span>{textScale}%</span>
+            <select
+              className="reader-input"
+              id="text-scale"
+              onChange={(event) => {
+                const value = Number(event.target.value);
+                if (Number.isFinite(value)) setTextScale(normalizeTextScale(value));
+              }}
+              value={textScale}
+            >
+              {[50, 60, 70, 80, 90, 100].map((value) => (
+                <option key={value} value={value}>{value}%</option>
+              ))}
+            </select>
           </label>
           {mode === "focus" && (
             <>
               <label htmlFor="anchor-position">
                 Anchor
-                <input id="anchor-position" max="75" min="25" onChange={(event) => setAnchorPosition(Number(event.target.value))} type="range" value={anchorPosition} />
+                <input
+                  className="reader-input"
+                  id="anchor-position"
+                  max="75"
+                  min="25"
+                  onChange={(event) => {
+                    const value = Number(event.target.value);
+                    if (Number.isFinite(value)) setAnchorPosition(clampNumber(value, 25, 75));
+                  }}
+                  type="number"
+                  value={anchorPosition}
+                />
               </label>
               <label htmlFor="timing-profile">
                 Timing
